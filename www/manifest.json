@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Brume Click",
+  "version": "1.0.0",
+  "description": "The browser extension for one-click wallet login",
+  "icons": {
+    "512": "/appicon.png"
+  },
+  "action": {
+    "default_popup": "/index.html"
+  },
+  "background": {
+    "type": "module",
+    "service_worker": "/service.worker.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; connect-src 'self';"
+  }
+}
