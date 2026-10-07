@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "The browser extension for one-click wallet login",
   "icons": {
-    "512": "/appicon.png"
+    "256": "/favicon.png"
   },
   "action": {
     "default_popup": "/index.html"
