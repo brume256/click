@@ -44,7 +44,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@hazae41/glace": "^1.0.37",
+    "@hazae41/glace": "^1.0.38",
     "@hazae41/phobos": "2.0.16",
     "@hazae41/saumon": "^1.0.4",
     "@types/react": "19.3.0",
