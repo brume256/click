@@ -35,7 +35,7 @@ function Body() {
 
   return <PathProvider value={path}>
     <StoreProvider>
-      <div className="h-full w-full overflow-y-auto animate-opacity-in">
+      <div className="h-full w-full overflow-y-auto animate-opacity-in text-base">
         <App />
       </div>
     </StoreProvider>
@@ -43,7 +43,7 @@ function Body() {
 }
 
 if (process.env.PLATFORM === "browser") {
-  await new Rewind(document).hydrateOrThrow().then(() => hydrateRoot(document.body, <Body />))
+  await new Rewind(document).renderOrThrow().then(() => hydrateRoot(document.body, <Body />))
 } else {
   console.log("Static generation skipped")
 }

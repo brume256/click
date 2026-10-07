@@ -6,14 +6,17 @@
   "icons": {
     "256": "/favicon.png"
   },
-  "action": {
-    "default_popup": "/index.html"
+  "permissions": [
+    "sidePanel"
+  ],
+  "side_panel": {
+    "default_path": "/index.html"
   },
   "background": {
     "type": "module",
     "service_worker": "/service.worker.js"
   },
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data: blob:; connect-src 'self';"
+    "extension_pages": "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';"
   }
 }
