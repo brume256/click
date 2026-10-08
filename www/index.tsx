@@ -43,7 +43,7 @@ function Body() {
 }
 
 if (process.env.PLATFORM === "browser") {
-  await new Rewind(document).renderOrThrow().then(() => hydrateRoot(document.body, <Body />))
+  await new Rewind(document).render().then(() => hydrateRoot(document.body, <Body />))
 } else {
   console.log("Static generation skipped")
 }
