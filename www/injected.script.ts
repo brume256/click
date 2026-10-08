@@ -59,7 +59,7 @@ class Ethereum extends EventTarget {
 }
 
 const info: EIP6963ProviderInfo = Object.freeze({
-  uuid: "e750a98c-ff2d-4fc4-b6e2-faf4d13d1add",
+  uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
   name: "Brume Click",
   icon: "https://brume.tech/appicon.png",
   rdns: "tech.brume"
