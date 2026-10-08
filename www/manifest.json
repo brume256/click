@@ -9,6 +9,9 @@
   "permissions": [
     "sidePanel"
   ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';"
+  },
   "side_panel": {
     "default_path": "/index.html"
   },
@@ -16,7 +19,18 @@
     "type": "module",
     "service_worker": "/service.worker.js"
   },
-  "content_security_policy": {
-    "extension_pages": "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';"
-  }
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "injected.script.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    }
+  ]
 }
