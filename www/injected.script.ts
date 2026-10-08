@@ -58,6 +58,13 @@ class Ethereum extends EventTarget {
 
 }
 
+const info: EIP6963ProviderInfo = Object.freeze({
+  uuid: "e750a98c-ff2d-4fc4-b6e2-faf4d13d1add",
+  name: "Brume Click",
+  icon: "https://brume.tech/appicon.png",
+  rdns: "tech.brume"
+})
+
 // const provider = new Ethereum()
 
 const provider = new Proxy(new Ethereum(), {
@@ -68,17 +75,8 @@ const provider = new Proxy(new Ethereum(), {
 })
 
 function announce() {
-  const info: EIP6963ProviderInfo = Object.freeze({
-    uuid: "e750a98c-ff2d-4fc4-b6e2-faf4d13d1add",
-    name: "Brume Click",
-    icon: "https://brume.tech/appicon.png",
-    rdns: "tech.brume"
-  })
-
   const detail: EIP6963ProviderDetail = Object.freeze({ info, provider })
-  const event = new CustomEvent("eip6963:announceProvider", { detail })
-
-  dispatchEvent(event)
+  dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
 }
 
 addEventListener("eip6963:requestProvider", announce, { passive: true })
