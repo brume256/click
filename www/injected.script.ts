@@ -1,9 +1,16 @@
-// deno-lint-ignore-file no-empty-interface no-namespace
+// deno-lint-ignore-file no-namespace
 
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
-interface EIP1193Provider { }
+interface EIP1193Provider {
+
+  request<T>(init: RpcRequestPreinit<unknown>): Promise<T>
+
+  on(event: string, listener: EventListenerOrEventListenerObject): void
+  off(event: string, listener: EventListenerOrEventListenerObject): void
+
+}
 
 interface EIP6963ProviderInfo {
   readonly uuid: Nullable<string>
@@ -33,26 +40,9 @@ declare global {
   }
 }
 
-namespace Brume {
+namespace brume {
 
   export const counter = new RpcCounter()
-
-  export function requestSync<T>(init: RpcRequestPreinit<unknown>) {
-    const { method, params } = init
-
-    const rpcrequest = new RpcRequest(null, method, params)
-    const rawrequest = JSON.stringify(rpcrequest)
-
-    const formData = new FormData()
-    formData.set("request", rawrequest)
-
-    dispatchEvent(new FormDataEvent("brume:requestSync", { formData }))
-
-    const rawresponse = formData.get("response") as string
-    const rpcresponse = RpcResponse.from<T>(JSON.parse(rawresponse))
-
-    return rpcresponse.getOrThrow()
-  }
 
   export async function request<T>(init: RpcRequestPreinit<unknown>) {
     const cleaner = new AbortController()
@@ -79,20 +69,36 @@ namespace Brume {
     return response.getOrThrow()
   }
 
+  export function requestSync<T>(init: RpcRequestPreinit<unknown>) {
+    const { method, params } = init
+
+    const rpcrequest = new RpcRequest(null, method, params)
+    const rawrequest = JSON.stringify(rpcrequest)
+
+    const formData = new FormData()
+    formData.set("request", rawrequest)
+
+    dispatchEvent(new FormDataEvent("brume:requestSync", { formData }))
+
+    const rawresponse = formData.get("response") as string
+    const rpcresponse = RpcResponse.from<T>(JSON.parse(rawresponse))
+
+    return rpcresponse.getOrThrow()
+  }
 
 }
 
-namespace Ethereum {
+namespace ethereum {
 
   export function announce() {
     const info: EIP6963ProviderInfo = {
       uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
       name: "Brume Click",
-      icon: Brume.requestSync<string>({ method: "chrome_url", params: ["/appicon.png"] }),
+      icon: brume.requestSync<string>({ method: "chrome_url", params: ["/appicon.png"] }),
       rdns: "tech.brume"
     }
 
-    const provider = new Proxy(Ethereum, {
+    const provider = new Proxy(ethereum, {
       get(target, prop, receiver) {
         console.debug("Brume Click", "get", prop)
         return Reflect.get(target, prop, receiver)
@@ -110,17 +116,21 @@ namespace Ethereum {
   }
 
   export async function request<T>(init: RpcRequestPreinit<unknown>) {
-    return await Brume.request<T>(init)
+    return await brume.request<T>(init)
   }
 
   export function requestSync<T>(init: RpcRequestPreinit<unknown>) {
-    return Brume.requestSync<T>(init)
+    return brume.requestSync<T>(init)
   }
 
   export function on(event: string, listener: EventListenerOrEventListenerObject) {
     console.log("on", event, listener)
   }
 
+  export function off(event: string, listener: EventListenerOrEventListenerObject) {
+    console.log("off", event, listener)
+  }
+
 }
 
-Ethereum.announce()
+ethereum.announce()
