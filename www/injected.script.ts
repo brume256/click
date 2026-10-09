@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-namespace
 
-import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
 interface EIP1193Provider {
@@ -13,10 +12,10 @@ interface EIP1193Provider {
 }
 
 interface EIP6963ProviderInfo {
-  readonly uuid: Nullable<string>
-  readonly name: Nullable<string>
-  readonly icon: Nullable<string>
-  readonly rdns: Nullable<string>
+  readonly uuid: string
+  readonly name: string
+  readonly icon: string
+  readonly rdns: string
 }
 
 interface EIP6963ProviderDetail {
