@@ -26,11 +26,33 @@
         "https://*/*"
       ],
       "js": [
+        "content.script.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
         "injected.script.js"
       ],
       "run_at": "document_start",
       "all_frames": true,
       "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "/appicon.png"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
     }
   ]
 }

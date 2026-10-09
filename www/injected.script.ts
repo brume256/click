@@ -1,84 +1,126 @@
-import { RpcCounter, RpcRequestPreinit } from "@hazae41/jsonrpc";
+// deno-lint-ignore-file no-empty-interface no-namespace
+
+import { Nullable } from "@/libs/nullable/mod.ts";
+import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
 interface EIP1193Provider { }
 
 interface EIP6963ProviderInfo {
-  readonly uuid: string;
-  readonly name: string;
-  readonly icon: string;
-  readonly rdns: string;
+  readonly uuid: Nullable<string>
+  readonly name: Nullable<string>
+  readonly icon: Nullable<string>
+  readonly rdns: Nullable<string>
 }
 
 interface EIP6963ProviderDetail {
-  readonly info: EIP6963ProviderInfo;
-  readonly provider: EIP1193Provider;
+  readonly info: EIP6963ProviderInfo
+  readonly provider: EIP1193Provider
 }
 
 interface EIP6963AnnounceProviderEvent extends CustomEvent {
-  readonly type: "eip6963:announceProvider";
-  readonly detail: EIP6963ProviderDetail;
+  readonly type: "eip6963:announceProvider"
+  readonly detail: EIP6963ProviderDetail
 }
 
 interface EIP6963RequestProviderEvent extends CustomEvent {
-  readonly type: "eip6963:requestProvider";
+  readonly type: "eip6963:requestProvider"
 }
 
 declare global {
   interface DedicatedWorkerGlobalScopeEventMap {
-    "eip6963:announceProvider": EIP6963AnnounceProviderEvent,
+    "eip6963:announceProvider": EIP6963AnnounceProviderEvent
     "eip6963:requestProvider": EIP6963RequestProviderEvent
   }
 }
 
-class Ethereum extends EventTarget {
+namespace Brume {
 
-  readonly counter = new RpcCounter()
+  export const counter = new RpcCounter()
 
-  constructor() {
-    super()
+  export function requestSync<T>(init: RpcRequestPreinit<unknown>) {
+    const { method, params } = init
+
+    const rpcrequest = new RpcRequest(null, method, params)
+    const rawrequest = JSON.stringify(rpcrequest)
+
+    const formData = new FormData()
+    formData.set("request", rawrequest)
+
+    dispatchEvent(new FormDataEvent("brume:requestSync", { formData }))
+
+    const rawresponse = formData.get("response") as string
+    const rpcresponse = RpcResponse.from<T>(JSON.parse(rawresponse))
+
+    return rpcresponse.getOrThrow()
   }
 
-  async request<T>(init: RpcRequestPreinit<unknown>) {
-    console.log("->", init)
+  export async function request<T>(init: RpcRequestPreinit<unknown>) {
+    const cleaner = new AbortController()
 
-    const request = this.counter.prepare(init)
+    const request = counter.prepare(init)
 
-    if (request.method === "eth_chainId")
-      return "0x1"
-    if (request.method === "eth_accounts")
-      return ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
+    const { promise, resolve } = Promise.withResolvers<RpcResponseInit<T>>()
 
-    throw new Error("Unimplemented")
+    addEventListener("brume:respond", (event) => {
+      const { detail: response } = event as CustomEvent<RpcResponse<T>>
+
+      if (response.id !== request.id)
+        return
+
+      resolve(response)
+    }, { passive: true, signal: cleaner.signal })
+
+    dispatchEvent(new CustomEvent("brume:request", { detail: request }))
+
+    const response = RpcResponse.from<T>(await promise)
+
+    cleaner.abort()
+
+    return response.getOrThrow()
   }
 
-  on(event: string, listener: EventListenerOrEventListenerObject) {
+
+}
+
+namespace Ethereum {
+
+  export function announce() {
+    const info: EIP6963ProviderInfo = {
+      uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
+      name: "Brume Click",
+      icon: Brume.requestSync<string>({ method: "chrome_url", params: ["/appicon.png"] }),
+      rdns: "tech.brume"
+    }
+
+    const provider = new Proxy(Ethereum, {
+      get(target, prop, receiver) {
+        console.debug("Brume Click", "get", prop)
+        return Reflect.get(target, prop, receiver)
+      },
+      set(target, prop, value, receiver) {
+        console.debug("Brume Click", "set", prop, value)
+        return Reflect.set(target, prop, value, receiver)
+      }
+    })
+
+    const detail: EIP6963ProviderDetail = { info, provider }
+    dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
+
+    addEventListener("eip6963:requestProvider", announce, { passive: true })
+  }
+
+  export async function request<T>(init: RpcRequestPreinit<unknown>) {
+    return await Brume.request<T>(init)
+  }
+
+  export function requestSync<T>(init: RpcRequestPreinit<unknown>) {
+    return Brume.requestSync<T>(init)
+  }
+
+  export function on(event: string, listener: EventListenerOrEventListenerObject) {
     console.log("on", event, listener)
   }
 
-
 }
 
-const info: EIP6963ProviderInfo = Object.freeze({
-  uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
-  name: "Brume Click",
-  icon: "https://brume.tech/appicon.png",
-  rdns: "tech.brume"
-})
-
-// const provider = new Ethereum()
-
-const provider = new Proxy(new Ethereum(), {
-  get(target, prop, receiver) {
-    console.log("get", prop)
-    return Reflect.get(target, prop, receiver)
-  }
-})
-
-function announce() {
-  const detail: EIP6963ProviderDetail = Object.freeze({ info, provider })
-  dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
-}
-
-addEventListener("eip6963:requestProvider", announce, { passive: true })
-
-announce()
+Ethereum.announce()

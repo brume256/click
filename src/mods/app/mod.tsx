@@ -8,7 +8,7 @@ export function App() {
     <div className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default rounded-xl font-medium p-4 flex flex-col items-start"
       data-theme="opposite">
       <div className="">
-        My Main Wallet
+        Vitalik
       </div>
       <div className="grow" />
       <div className="bg-default-contrast rounded-full po-1 flex items-center gap-2">
