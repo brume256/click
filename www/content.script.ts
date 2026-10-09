@@ -7,8 +7,11 @@ namespace brume {
 
   export function routeSync(request: RpcRequest) {
     if (request.method === "chrome_url") {
-      const [url] = request.params as [string]
-      return chrome.runtime.getURL(url)
+      const [path] = request.params as [string]
+
+      const url = chrome.runtime.getURL(path)
+
+      return url
     }
 
     throw new RpcMethodNotFoundError()
