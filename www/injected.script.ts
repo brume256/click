@@ -87,7 +87,7 @@ namespace ethereum {
     uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
     name: "Brume Click",
     icon: brume.requestSync<string>({ method: "chrome_url", params: ["/appicon.png"] }),
-    rdns: "tech.brume"
+    rdns: "tech.brume.click"
   }
 
   export function announce() {
