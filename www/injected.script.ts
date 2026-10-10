@@ -54,12 +54,12 @@ namespace brume {
 declare global {
 
   interface Window {
-    ethereum: EIP1193Provider
+    ethereum: Ethereum
   }
 
 }
 
-class EIP1193Provider extends EventEmitter {
+class Ethereum extends EventEmitter {
 
   constructor() {
     super()
@@ -75,9 +75,9 @@ class EIP1193Provider extends EventEmitter {
 
 }
 
-namespace eip1193 {
+namespace ethereum {
 
-  window.ethereum = new EIP1193Provider()
+  window.ethereum = new Ethereum()
 
 }
 
@@ -90,7 +90,7 @@ interface EIP6963ProviderInfo {
 
 interface EIP6963ProviderDetail {
   readonly info: EIP6963ProviderInfo
-  readonly provider: EIP1193Provider
+  readonly provider: Ethereum
 }
 
 interface EIP6963AnnounceProviderEvent extends CustomEvent {
@@ -121,7 +121,7 @@ namespace eip6963 {
   }
 
   export function announce() {
-    const detail: EIP6963ProviderDetail = { info, provider: new EIP1193Provider() }
+    const detail: EIP6963ProviderDetail = { info, provider: new Ethereum() }
     dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
   }
 
