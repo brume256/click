@@ -47,7 +47,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "/appicon.png"
+        "/padicon.png"
       ],
       "matches": [
         "http://*/*",
