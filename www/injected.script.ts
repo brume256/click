@@ -1,15 +1,7 @@
 // deno-lint-ignore-file no-namespace
 
-import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
-
-interface EIP1193Provider {
-
-  request<T>(init: RpcRequestPreinit<unknown>): Promise<T>
-
-  on(event: string, listener: EventListenerOrEventListenerObject): void
-  off(event: string, listener: EventListenerOrEventListenerObject): void
-
-}
+import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc"
+import { EventEmitter } from "events"
 
 interface EIP6963ProviderInfo {
   readonly uuid: string
@@ -33,10 +25,12 @@ interface EIP6963RequestProviderEvent extends CustomEvent {
 }
 
 declare global {
+
   interface DedicatedWorkerGlobalScopeEventMap {
     "eip6963:announceProvider": EIP6963AnnounceProviderEvent
     "eip6963:requestProvider": EIP6963RequestProviderEvent
   }
+
 }
 
 namespace brume {
@@ -89,45 +83,31 @@ namespace brume {
 
 namespace ethereum {
 
+  export const info: EIP6963ProviderInfo = {
+    uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
+    name: "Brume Click",
+    icon: brume.requestSync<string>({ method: "chrome_url", params: ["/appicon.png"] }),
+    rdns: "tech.brume"
+  }
+
   export function announce() {
-    const info: EIP6963ProviderInfo = {
-      uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
-      name: "Brume Click",
-      icon: brume.requestSync<string>({ method: "chrome_url", params: ["/appicon.png"] }),
-      rdns: "tech.brume"
-    }
-
-    const provider = new Proxy(ethereum, {
-      get(target, prop, receiver) {
-        console.debug("Brume Click", "get", prop)
-        return Reflect.get(target, prop, receiver)
-      },
-      set(target, prop, value, receiver) {
-        console.debug("Brume Click", "set", prop, value)
-        return Reflect.set(target, prop, value, receiver)
-      }
-    })
-
-    const detail: EIP6963ProviderDetail = { info, provider }
-    dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
-
     addEventListener("eip6963:requestProvider", announce, { passive: true })
+
+    const detail: EIP6963ProviderDetail = { info, provider: new EIP1193Provider() }
+
+    dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
   }
 
-  export async function request<T>(init: RpcRequestPreinit<unknown>) {
+}
+
+class EIP1193Provider extends EventEmitter {
+
+  constructor() {
+    super()
+  }
+
+  async request<T>(init: RpcRequestPreinit<unknown>) {
     return await brume.request<T>(init)
-  }
-
-  export function requestSync<T>(init: RpcRequestPreinit<unknown>) {
-    return brume.requestSync<T>(init)
-  }
-
-  export function on(event: string, listener: EventListenerOrEventListenerObject) {
-    console.log("on", event, listener)
-  }
-
-  export function off(event: string, listener: EventListenerOrEventListenerObject) {
-    console.log("off", event, listener)
   }
 
 }
