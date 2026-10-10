@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace
+// deno-lint-ignore-file no-namespace no-window
 
 import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc"
 import { EventEmitter } from "events"
@@ -81,6 +81,14 @@ declare global {
 
 }
 
+declare global {
+
+  interface Window {
+    ethereum: EIP1193Provider
+  }
+
+}
+
 class EIP1193Provider extends EventEmitter {
 
   constructor() {
@@ -90,6 +98,12 @@ class EIP1193Provider extends EventEmitter {
   async request<T>(init: RpcRequestPreinit<unknown>) {
     return await brume.request<T>(init)
   }
+
+}
+
+namespace eip1193 {
+
+  window.ethereum = new EIP1193Provider()
 
 }
 
