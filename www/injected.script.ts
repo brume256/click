@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace no-window
+// deno-lint-ignore-file no-namespace no-window require-await
 
 import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc"
 import { EventEmitter } from "events"
@@ -51,6 +51,36 @@ namespace brume {
 
 }
 
+declare global {
+
+  interface Window {
+    ethereum: EIP1193Provider
+  }
+
+}
+
+class EIP1193Provider extends EventEmitter {
+
+  constructor() {
+    super()
+  }
+
+  get isMetaMask() {
+    return true
+  }
+
+  async request<T>(init: RpcRequestPreinit<unknown>) {
+    return await brume.request<T>(init)
+  }
+
+}
+
+namespace eip1193 {
+
+  window.ethereum = new EIP1193Provider()
+
+}
+
 interface EIP6963ProviderInfo {
   readonly uuid: string
   readonly name: string
@@ -81,32 +111,6 @@ declare global {
 
 }
 
-declare global {
-
-  interface Window {
-    ethereum: EIP1193Provider
-  }
-
-}
-
-class EIP1193Provider extends EventEmitter {
-
-  constructor() {
-    super()
-  }
-
-  async request<T>(init: RpcRequestPreinit<unknown>) {
-    return await brume.request<T>(init)
-  }
-
-}
-
-namespace eip1193 {
-
-  window.ethereum = new EIP1193Provider()
-
-}
-
 namespace eip6963 {
 
   export const info: EIP6963ProviderInfo = {
@@ -126,6 +130,58 @@ namespace eip6963 {
   }, { passive: true })
 
   announce()
+
+}
+
+declare global {
+
+  interface Window {
+    solana: Solana
+  }
+
+}
+
+declare global {
+
+  interface Window {
+    phantom: { solana: Solana }
+  }
+
+}
+
+class Solana extends EventEmitter {
+
+  constructor() {
+    super()
+  }
+
+  get isPhantom() {
+    return true
+  }
+
+  async connect() {
+    return Uint8Array.fromHex("37b018ef756c14309a2c1bee7f3584793f0e3ce17e6d092de57660bb6e188b0b")
+  }
+
+  async disconnect() {
+    ;
+  }
+
+  async signMessage() {
+    throw new Error("Not implemented")
+  }
+
+  async signTransaction() {
+    throw new Error("Not implemented")
+  }
+
+}
+
+namespace solana {
+
+  window.solana = new Solana()
+
+  window.phantom = { solana: window.solana }
 
 }
 
