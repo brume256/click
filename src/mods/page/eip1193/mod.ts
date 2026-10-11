@@ -18,26 +18,26 @@ export class Ethereum extends EventEmitter {
     super()
 
     addEventListener("pipe:message", (event) => {
-      const { detail: message } = event
+      const { detail: request } = event
 
-      if (message.method === "eth_accountsChanged") {
-        const [accounts] = message.params as [string[]]
+      if (request.method === "eth_accountsChanged") {
+        const accounts = request.params as string[]
 
         this.emit("accountsChanged", accounts)
 
         return
       }
 
-      if (message.method === "eth_chainChanged") {
-        const [chainIdAsHex] = message.params as [string]
+      if (request.method === "eth_chainChanged") {
+        const [chainIdAsHex] = request.params as [string]
 
         this.emit("chainChanged", chainIdAsHex)
 
         return
       }
 
-      if (message.method === "eth_message") {
-        const [content] = message.params as [string]
+      if (request.method === "eth_message") {
+        const [content] = request.params as [string]
 
         this.emit("message", content)
 

@@ -99,11 +99,11 @@ export namespace wallet {
 
     chains: ["solana:mainnet", "solana:devnet"],
 
-    accounts: [dummy],
+    accounts: [],
     features: {
       "standard:connect": {
         version: "1.0.0",
-        connect: () => ({ accounts: [dummy] })
+        connect: () => ({ accounts: [] })
       },
       "standard:disconnect": {
         version: "1.0.0",

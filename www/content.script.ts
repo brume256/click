@@ -152,7 +152,11 @@ namespace frontend {
     try {
       const request = RpcRequest.from(event.detail)
 
+      console.log("->", request)
+
       const response = new RpcOk(request.id, await route(request))
+
+      console.log("<-", response)
 
       dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 
@@ -161,6 +165,8 @@ namespace frontend {
       const request = RpcRequest.from(event.detail)
 
       const response = new RpcErr(request.id, RpcError.rewrap(error))
+
+      console.log("<-", response)
 
       dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 
