@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace require-await no-window
+// deno-lint-ignore-file no-namespace require-await no-window no-explicit-any
 
 import { pipe } from "@/mods/page/pipe/mod.ts";
 import { EventEmitter } from "events";
@@ -49,9 +49,11 @@ export class Solana extends EventEmitter {
 
 export namespace solana {
 
-  window.solana = new Solana()
+  export const provider = new Solana()
 
-  window.phantom = { solana: window.solana }
+  window.solana = provider
+
+  window.phantom = { solana: provider }
 
 }
 
@@ -109,7 +111,10 @@ export namespace wallet {
       },
       "standard:events": {
         version: "1.0.0",
-        on: () => { },
+        on: (name: string, listener: (...args: any[]) => void) => {
+          solana.provider.on(name, listener)
+          return () => solana.provider.off(name, listener)
+        },
       },
       "solana:signMessage": {
         version: "1.0.0",
