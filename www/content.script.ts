@@ -6,6 +6,11 @@ import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest } from "@ha
 namespace brume {
 
   export function routeSync(request: RpcRequest) {
+    if (request.method === "chrome_name")
+      return chrome.runtime.getManifest().name
+    if (request.method === "chrome_version")
+      return chrome.runtime.getManifest().version
+
     if (request.method === "chrome_url") {
       const [path] = request.params as [string]
 
@@ -30,7 +35,7 @@ namespace brume {
     throw new RpcMethodNotFoundError()
   }
 
-  addEventListener("brume:requestSync", (event) => {
+  addEventListener("pipe:requestSync", (event) => {
     try {
       const { formData } = event as FormDataEvent
 
@@ -61,7 +66,7 @@ namespace brume {
     }
   })
 
-  addEventListener("brume:request", async (event) => {
+  addEventListener("pipe:request", async (event) => {
     try {
       const { detail: request } = event as CustomEvent<RpcRequest>
 
@@ -71,7 +76,7 @@ namespace brume {
 
       console.debug("<-", response)
 
-      dispatchEvent(new CustomEvent("brume:respond", { detail: response }))
+      dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 
       return
     } catch (error: unknown) {
@@ -81,7 +86,7 @@ namespace brume {
 
       console.debug("<-", response)
 
-      dispatchEvent(new CustomEvent("brume:respond", { detail: response }))
+      dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 
       return
     }

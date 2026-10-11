@@ -2,7 +2,24 @@
 
 import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
-export namespace brume {
+declare global {
+
+  export interface WindowEventMap {
+    "pipe:request": CustomEvent<RpcRequest<unknown>>
+    "pipe:respond": CustomEvent<RpcResponse<unknown>>
+  }
+
+}
+
+declare global {
+
+  export interface WindowEventMap {
+    "pipe:requestSync": FormDataEvent
+  }
+
+}
+
+export namespace pipe {
 
   export const counter = new RpcCounter()
 
@@ -13,7 +30,7 @@ export namespace brume {
 
     const { promise, resolve } = Promise.withResolvers<RpcResponseInit<T>>()
 
-    addEventListener("brume:respond", (event) => {
+    addEventListener("pipe:respond", (event) => {
       const { detail: response } = event as CustomEvent<RpcResponse<T>>
 
       if (response.id !== request.id)
@@ -22,7 +39,7 @@ export namespace brume {
       resolve(response)
     }, { passive: true, signal: cleaner.signal })
 
-    dispatchEvent(new CustomEvent("brume:request", { detail: request }))
+    dispatchEvent(new CustomEvent("pipe:request", { detail: request }))
 
     const response = RpcResponse.from<T>(await promise)
 
@@ -40,7 +57,7 @@ export namespace brume {
     const formData = new FormData()
     formData.set("request", rawrequest)
 
-    dispatchEvent(new FormDataEvent("brume:requestSync", { formData }))
+    dispatchEvent(new FormDataEvent("pipe:requestSync", { formData }))
 
     const rawresponse = formData.get("response") as string
     const rpcresponse = RpcResponse.from<T>(JSON.parse(rawresponse))

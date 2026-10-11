@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-namespace no-window
 
-import { brume } from "@/mods/page/brume/mod.ts";
+import { pipe } from "@/mods/page/pipe/mod.ts";
 import { RpcRequestPreinit } from "@hazae41/jsonrpc";
 import { EventEmitter } from "events";
 
@@ -23,7 +23,7 @@ export class Ethereum extends EventEmitter {
   }
 
   async request<T>(init: RpcRequestPreinit<unknown>) {
-    return await brume.request<T>(init)
+    return await pipe.request<T>(init)
   }
 
 }

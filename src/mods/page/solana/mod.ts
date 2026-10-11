@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-namespace require-await no-window
 
-import { brume } from "@/mods/page/brume/mod.ts";
+import { pipe } from "@/mods/page/pipe/mod.ts";
 import { EventEmitter } from "events";
 
 declare global {
@@ -57,11 +57,14 @@ export namespace solana {
 
 export interface WalletStandardWalletInfo {
   readonly version: string
+
   readonly name: string
   readonly icon: string
+
   readonly chains: string[]
-  readonly features: Record<string, unknown>
+
   readonly accounts: unknown[]
+  readonly features: Record<string, unknown>
 }
 
 export interface WalletStandardApp {
@@ -87,10 +90,13 @@ export namespace wallet {
   }
 
   export const info: WalletStandardWalletInfo = {
-    version: "1.0.0",
-    name: "Brume Click",
-    icon: brume.requestSync<string>({ method: "chrome_url", params: ["/padicon.png"] }),
+    version: pipe.requestSync<string>({ method: "chrome_version" }),
+
+    name: pipe.requestSync<string>({ method: "chrome_name" }),
+    icon: pipe.requestSync<string>({ method: "chrome_url", params: ["/padicon.png"] }),
+
     chains: ["solana:mainnet", "solana:devnet"],
+
     accounts: [dummy],
     features: {
       "standard:connect": {
