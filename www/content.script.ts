@@ -6,6 +6,11 @@ import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest } from "@ha
 namespace brume {
 
   export function routeSync(request: RpcRequest) {
+    if (request.method === "eip6963_uuid")
+      return "e60d639a-8479-4a9b-a7d6-ac4bd3957b13"
+    if (request.method === "eip6963_rdns")
+      return "tech.brume.click"
+
     if (request.method === "chrome_name")
       return chrome.runtime.getManifest().name
     if (request.method === "chrome_version")

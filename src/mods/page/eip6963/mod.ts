@@ -36,10 +36,10 @@ export interface EIP6963RequestProviderEvent extends CustomEvent {
 export namespace eip6963 {
 
   export const info: EIP6963ProviderInfo = {
-    uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
+    uuid: pipe.requestSync<string>({ method: "eip6963_uuid" }),
+    rdns: pipe.requestSync<string>({ method: "eip6963_rdns" }),
     name: pipe.requestSync<string>({ method: "chrome_name" }),
-    icon: pipe.requestSync<string>({ method: "chrome_url", params: ["/padicon.png"] }),
-    rdns: "tech.brume.click"
+    icon: pipe.requestSync<string>({ method: "chrome_url", params: ["/padicon.png"] })
   }
 
   export function announce() {
