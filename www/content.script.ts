@@ -1,11 +1,92 @@
 // deno-lint-ignore-file no-namespace require-await
 /// <reference types="chrome" />
 
-import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest } from "@hazae41/jsonrpc";
+import { RpcErr, RpcError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
-namespace brume {
+declare global {
 
-  const accounts = ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
+  export interface WindowEventMap {
+    "pipe:request": CustomEvent<RpcRequestInit>
+    "pipe:respond": CustomEvent<RpcResponseInit>
+  }
+
+}
+
+declare global {
+
+  export interface WindowEventMap {
+    "pipe:requestSync": FormDataEvent
+  }
+
+}
+
+declare global {
+
+  export interface WindowEventMap {
+    "pipe:message": CustomEvent<RpcRequestPreinit>
+  }
+
+}
+
+namespace backend {
+
+  export const port = chrome.runtime.connect()
+
+  export async function request<T>(init: RpcRequestPreinit) {
+    const { method, params } = init
+
+    const request = new RpcRequest(crypto.randomUUID(), method, params)
+
+    const { promise, resolve } = Promise.withResolvers<RpcResponse>()
+
+    const onMessage = (message: RpcMessageInit) => {
+      if ("method" in message === true)
+        return
+
+      const response = RpcResponse.from(message)
+
+      if (response.id !== request.id)
+        return
+
+      resolve(response)
+    }
+
+    port.onMessage.addListener(onMessage)
+
+    port.postMessage(request)
+
+    const response = await promise
+
+    port.onMessage.removeListener(onMessage)
+
+    return response.getOrThrow() as T
+  }
+
+  port.onMessage.addListener((message: RpcMessageInit) => {
+    if ("method" in message === false)
+      return
+
+    const request = RpcRequest.from(message)
+
+    if (request.method === "eth_accountsChanged")
+      return frontend.message(request)
+    if (request.method === "eth_chainChanged")
+      return frontend.message(request)
+
+    return
+  })
+
+}
+
+namespace frontend {
+
+  export function message(init: RpcRequestPreinit) {
+    const { method, params } = init
+
+    const request = new RpcRequest(crypto.randomUUID(), method, params)
+
+    dispatchEvent(new CustomEvent("pipe:message", { detail: request }))
+  }
 
   export function routeSync(request: RpcRequest) {
     if (request.method === "eip6963_uuid")
@@ -33,9 +114,9 @@ namespace brume {
     if (request.method === "eth_chainId")
       return "0x1"
     if (request.method === "eth_accounts")
-      return accounts
+      return await backend.request(request)
     if (request.method === "eth_requestAccounts")
-      return accounts
+      return await backend.request(request)
     if (request.method === "wallet_requestPermissions")
       return { parentCapability: "eth_accounts", caveats: [] }
 
@@ -44,28 +125,22 @@ namespace brume {
 
   addEventListener("pipe:requestSync", (event) => {
     try {
-      const { formData } = event as FormDataEvent
+      const { formData } = event
 
       const rawrequest = formData.get("request") as string
       const rpcrequest = RpcRequest.from(JSON.parse(rawrequest))
 
-      console.debug("->", rpcrequest)
-
-      const rpcresponse = new RpcOk(null, brume.routeSync(rpcrequest))
+      const rpcresponse = new RpcOk(null, routeSync(rpcrequest))
       const rawresponse = JSON.stringify(rpcresponse)
-
-      console.debug("<-", rpcresponse)
 
       formData.set("response", rawresponse)
 
       return
     } catch (error: unknown) {
-      const { formData } = event as FormDataEvent
+      const { formData } = event
 
       const rpcresponse = new RpcErr(null, RpcError.rewrap(error))
       const rawresponse = JSON.stringify(rpcresponse)
-
-      console.debug("<-", rpcresponse)
 
       formData.set("response", rawresponse)
 
@@ -75,23 +150,17 @@ namespace brume {
 
   addEventListener("pipe:request", async (event) => {
     try {
-      const { detail: request } = event as CustomEvent<RpcRequest>
+      const request = RpcRequest.from(event.detail)
 
-      console.debug("->", request)
-
-      const response = new RpcOk(request.id, await brume.route(request))
-
-      console.debug("<-", response)
+      const response = new RpcOk(request.id, await route(request))
 
       dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 
       return
     } catch (error: unknown) {
-      const { detail: request } = event as CustomEvent<RpcRequest>
+      const request = RpcRequest.from(event.detail)
 
       const response = new RpcErr(request.id, RpcError.rewrap(error))
-
-      console.debug("<-", response)
 
       dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 

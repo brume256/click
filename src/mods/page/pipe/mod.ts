@@ -1,12 +1,12 @@
 // deno-lint-ignore-file no-namespace
 
-import { RpcCounter, RpcRequest, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
+import { RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
 declare global {
 
   export interface WindowEventMap {
-    "pipe:request": CustomEvent<RpcRequest<unknown>>
-    "pipe:respond": CustomEvent<RpcResponse<unknown>>
+    "pipe:request": CustomEvent<RpcRequestInit>
+    "pipe:respond": CustomEvent<RpcResponseInit>
   }
 
 }
@@ -19,39 +19,47 @@ declare global {
 
 }
 
+declare global {
+
+  export interface WindowEventMap {
+    "pipe:message": CustomEvent<RpcRequestPreinit>
+  }
+
+}
+
 export namespace pipe {
 
-  export const counter = new RpcCounter()
+  export async function request<T>(init: RpcRequestPreinit) {
+    const { method, params } = init
 
-  export async function request<T>(init: RpcRequestPreinit<unknown>) {
-    const cleaner = new AbortController()
+    const request = new RpcRequest(crypto.randomUUID(), method, params)
 
-    const request = counter.prepare(init)
+    const { promise, resolve } = Promise.withResolvers<RpcResponse>()
 
-    const { promise, resolve } = Promise.withResolvers<RpcResponseInit<T>>()
-
-    addEventListener("pipe:respond", (event) => {
-      const { detail: response } = event as CustomEvent<RpcResponse<T>>
+    const onRespond = (event: CustomEvent<RpcResponseInit>) => {
+      const response = RpcResponse.from(event.detail)
 
       if (response.id !== request.id)
         return
 
       resolve(response)
-    }, { passive: true, signal: cleaner.signal })
+    }
+
+    addEventListener("pipe:respond", onRespond, { passive: true })
 
     dispatchEvent(new CustomEvent("pipe:request", { detail: request }))
 
-    const response = RpcResponse.from<T>(await promise)
+    const response = await promise
 
-    cleaner.abort()
+    removeEventListener("pipe:respond", onRespond)
 
-    return response.getOrThrow()
+    return response.getOrThrow() as T
   }
 
-  export function requestSync<T>(init: RpcRequestPreinit<unknown>) {
+  export function requestSync<T>(init: RpcRequestPreinit) {
     const { method, params } = init
 
-    const rpcrequest = new RpcRequest(null, method, params)
+    const rpcrequest = new RpcRequest(Date.now(), method, params)
     const rawrequest = JSON.stringify(rpcrequest)
 
     const formData = new FormData()

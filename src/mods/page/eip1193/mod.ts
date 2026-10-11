@@ -18,28 +18,28 @@ export class Ethereum extends EventEmitter {
     super()
 
     addEventListener("pipe:message", (event) => {
-      const { detail } = event as CustomEvent<RpcRequestPreinit<unknown>>
+      const { detail: message } = event
 
-      if (detail.method === "eth_accountsChanged") {
-        const [accounts] = detail.params as [string[]]
+      if (message.method === "eth_accountsChanged") {
+        const [accounts] = message.params as [string[]]
 
         this.emit("accountsChanged", accounts)
 
         return
       }
 
-      if (detail.method === "eth_chainChanged") {
-        const [chainIdAsHex] = detail.params as [string]
+      if (message.method === "eth_chainChanged") {
+        const [chainIdAsHex] = message.params as [string]
 
         this.emit("chainChanged", chainIdAsHex)
 
         return
       }
 
-      if (detail.method === "eth_message") {
-        const [message] = detail.params as [string]
+      if (message.method === "eth_message") {
+        const [content] = message.params as [string]
 
-        this.emit("message", message)
+        this.emit("message", content)
 
         return
       }
@@ -54,7 +54,7 @@ export class Ethereum extends EventEmitter {
     return true
   }
 
-  async request<T>(init: RpcRequestPreinit<unknown>) {
+  async request<T>(init: RpcRequestPreinit) {
     return await pipe.request<T>(init)
   }
 
