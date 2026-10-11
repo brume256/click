@@ -30,6 +30,8 @@ export class Ethereum extends EventEmitter {
 
 export namespace ethereum {
 
-  window.ethereum = new Ethereum()
+  export const provider = new Ethereum()
+
+  window.ethereum = provider
 
 }
