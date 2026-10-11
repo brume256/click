@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace
+// deno-lint-ignore-file no-namespace require-await
 /// <reference types="chrome" />
 
 import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest } from "@hazae41/jsonrpc";
@@ -17,7 +17,6 @@ namespace brume {
     throw new RpcMethodNotFoundError()
   }
 
-  // deno-lint-ignore require-await
   export async function route(request: RpcRequest) {
     if (request.method === "eth_chainId")
       return "0x1"

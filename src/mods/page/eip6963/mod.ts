@@ -1,0 +1,56 @@
+// deno-lint-ignore-file no-namespace
+
+import { brume } from "@/mods/page/brume/mod.ts";
+import { Ethereum } from "@/mods/page/eip1193/mod.ts";
+
+declare global {
+
+  export interface WindowEventMap {
+    "eip6963:announceProvider": EIP6963AnnounceProviderEvent
+    "eip6963:requestProvider": EIP6963RequestProviderEvent
+  }
+
+}
+
+export interface EIP6963ProviderInfo {
+  readonly uuid: string
+  readonly name: string
+  readonly icon: string
+  readonly rdns: string
+}
+
+export interface EIP6963ProviderDetail {
+  readonly info: EIP6963ProviderInfo
+  readonly provider: Ethereum
+}
+
+export interface EIP6963AnnounceProviderEvent extends CustomEvent {
+  readonly type: "eip6963:announceProvider"
+  readonly detail: EIP6963ProviderDetail
+}
+
+export interface EIP6963RequestProviderEvent extends CustomEvent {
+  readonly type: "eip6963:requestProvider"
+}
+
+export namespace eip6963 {
+
+  export const info: EIP6963ProviderInfo = {
+    uuid: "e60d639a-8479-4a9b-a7d6-ac4bd3957b13",
+    name: "Brume Click",
+    icon: brume.requestSync<string>({ method: "chrome_url", params: ["/padicon.png"] }),
+    rdns: "tech.brume.click"
+  }
+
+  export function announce() {
+    const detail: EIP6963ProviderDetail = { info, provider: new Ethereum() }
+    dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
+  }
+
+  addEventListener("eip6963:requestProvider", () => {
+    announce()
+  }, { passive: true })
+
+  announce()
+
+}
