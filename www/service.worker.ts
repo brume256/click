@@ -1,32 +1,54 @@
 /// <reference types="chrome" />
 
-import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
+import { RpcErr, RpcError, RpcInternalError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
 
-chrome.storage.session.set({ accounts: [] })
-
-// TODO: wait for user to select an account
-chrome.sidePanel.onOpened.addListener(() => chrome.storage.session.set({ accounts: ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"] }))
-chrome.sidePanel.onClosed.addListener(() => chrome.storage.session.set({ accounts: [] }))
+const accounts = new Map<string, string>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+
+/**
+ * Content script
+ */
 
 chrome.runtime.onConnect.addListener((port) => {
   const stack = new DisposableStack()
 
-  if (port.sender?.tab?.id == null)
+  const { sender } = port
+
+  if (sender == null)
     return
 
-  const tabId = port.sender?.tab?.id
+  const { origin, tab } = sender
+
+  if (origin == null)
+    return
+  if (tab == null)
+    return
+
+  const { windowId } = tab
+
+  if (windowId == null)
+    return
 
   const route = async (request: RpcRequest) => {
-    if (request.method === "eth_accounts")
-      return await chrome.storage.session.get<{ accounts: string[] }>("accounts").then(x => x.accounts)
+    if (request.method === "eth_accounts") {
+      const account = accounts.get(origin)
+
+      if (account != null)
+        return [account]
+
+      return []
+    }
+
     if (request.method === "eth_requestAccounts") {
-      await chrome.sidePanel.open({ tabId })
+      const account = accounts.get(origin)
 
-      // TODO: wait for user to select an account
+      if (account != null)
+        return [account]
 
-      return ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
+      await chrome.sidePanel.open({ windowId })
+
+      throw new RpcInternalError()
     }
 
     throw new RpcMethodNotFoundError()
@@ -66,14 +88,123 @@ chrome.runtime.onConnect.addListener((port) => {
   stack.defer(() => port.onMessage.removeListener(onMessage))
   stack.defer(() => port.onDisconnect.removeListener(onDisconnect))
 
-  const onOpened = () => port.postMessage({ method: "eth_accountsChanged", params: ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"] })
-  const onClosed = () => port.postMessage({ method: "eth_accountsChanged", params: [] })
+  return
+})
 
-  chrome.sidePanel.onOpened.addListener(onOpened)
-  chrome.sidePanel.onClosed.addListener(onClosed)
+/**
+ * Side panel
+ */
 
-  stack.defer(() => chrome.sidePanel.onOpened.removeListener(onOpened))
-  stack.defer(() => chrome.sidePanel.onClosed.removeListener(onClosed))
+chrome.runtime.onConnect.addListener((port) => {
+  const stack = new DisposableStack()
+
+  if (port.sender?.tab?.id != null)
+    return
+
+  const route = async (request: RpcRequest) => {
+    if (request.method === "chrome_tabUrl") {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
+
+      if (tab.url == null)
+        return
+
+      const url = new URL(tab.url)
+
+      return url.origin
+    }
+
+    if (request.method === "enabled") {
+      const [origin] = request.params as [string]
+
+      const enabled = accounts.has(origin)
+
+      return enabled
+    }
+
+    if (request.method === "enable") {
+      const [origin] = request.params as [string]
+
+      accounts.set(origin, "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+
+      return true
+    }
+
+    if (request.method === "disable") {
+      const [origin] = request.params as [string]
+
+      accounts.delete(origin)
+
+      return true
+    }
+
+    throw new RpcMethodNotFoundError()
+  }
+
+  const onMessage = async (init: RpcRequestInit) => {
+    try {
+      const request = RpcRequest.from(init)
+
+      console.log("->", request)
+
+      const response = new RpcOk(request.id, await route(request))
+
+      console.log("<-", response)
+
+      port.postMessage(response)
+
+      return
+    } catch (e: unknown) {
+      const request = RpcRequest.from(init)
+
+      const response = new RpcErr(request.id, RpcError.rewrap(e))
+
+      console.log("<-", response)
+
+      port.postMessage(response)
+
+      return
+    }
+  }
+
+  const onDisconnect = () => stack.dispose()
+
+  port.onMessage.addListener(onMessage)
+  port.onDisconnect.addListener(onDisconnect)
+
+  stack.defer(() => port.onMessage.removeListener(onMessage))
+  stack.defer(() => port.onDisconnect.removeListener(onDisconnect))
+
+  const onActivated = async ({ tabId }: chrome.tabs.OnActivatedInfo) => {
+    const tab = await chrome.tabs.get(tabId)
+
+    if (!tab.active)
+      return
+    if (tab.url == null)
+      return
+
+    const url = new URL(tab.url)
+
+    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_tabChanged", [url.origin]))
+  }
+
+  const onUpdated = async (tabId: number) => {
+    const tab = await chrome.tabs.get(tabId)
+
+    if (!tab.active)
+      return
+    if (tab.url == null)
+      return
+
+    const url = new URL(tab.url)
+
+    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_tabChanged", [url.origin]))
+  }
+
+  chrome.tabs.onActivated.addListener(onActivated)
+  chrome.tabs.onUpdated.addListener(onUpdated)
+
+  stack.defer(() => chrome.tabs.onActivated.removeListener(onActivated))
+  stack.defer(() => chrome.tabs.onUpdated.removeListener(onUpdated))
 
   return
 })
