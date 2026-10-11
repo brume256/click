@@ -16,6 +16,38 @@ export class Ethereum extends EventEmitter {
 
   constructor() {
     super()
+
+    addEventListener("pipe:message", (event) => {
+      const { detail } = event as CustomEvent<RpcRequestPreinit<unknown>>
+
+      if (detail.method === "eth_accountsChanged") {
+        const [accounts] = detail.params as [string[]]
+
+        this.emit("accountsChanged", accounts)
+
+        return
+      }
+
+      if (detail.method === "eth_chainChanged") {
+        const [chainIdAsHex] = detail.params as [string]
+
+        this.emit("chainChanged", chainIdAsHex)
+
+        return
+      }
+
+      if (detail.method === "eth_message") {
+        const [message] = detail.params as [string]
+
+        this.emit("message", message)
+
+        return
+      }
+
+      return
+    }, { passive: true })
+
+    return
   }
 
   get isMetaMask() {

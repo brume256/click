@@ -112,8 +112,8 @@ export namespace wallet {
       "standard:events": {
         version: "1.0.0",
         on: (name: string, listener: (...args: any[]) => void) => {
-          solana.provider.on(name, listener)
-          return () => solana.provider.off(name, listener)
+          window.solana.on(name, listener)
+          return () => window.solana.off(name, listener)
         },
       },
       "solana:signMessage": {

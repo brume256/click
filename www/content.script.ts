@@ -5,6 +5,8 @@ import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest } from "@ha
 
 namespace brume {
 
+  const accounts = ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
+
   export function routeSync(request: RpcRequest) {
     if (request.method === "eip6963_uuid")
       return "e60d639a-8479-4a9b-a7d6-ac4bd3957b13"
@@ -31,9 +33,9 @@ namespace brume {
     if (request.method === "eth_chainId")
       return "0x1"
     if (request.method === "eth_accounts")
-      return ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
+      return accounts
     if (request.method === "eth_requestAccounts")
-      return ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
+      return accounts
     if (request.method === "wallet_requestPermissions")
       return { parentCapability: "eth_accounts", caveats: [] }
 

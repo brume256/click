@@ -1,9 +1,12 @@
+/// <reference types="chrome" />
+
 import { Outline } from "@/libs/heroicons/mod.ts";
 import React from "react";
 
 React;
 
 export function App() {
+
   return <div className="h-full w-full flex flex-col items-center p-8">
     <div className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default rounded-xl font-medium p-4 flex flex-col items-start"
       data-theme="opposite">

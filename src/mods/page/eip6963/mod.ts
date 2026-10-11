@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace
+// deno-lint-ignore-file no-namespace no-window
 
 import { Ethereum } from "@/mods/page/eip1193/mod.ts";
 import { pipe } from "@/mods/page/pipe/mod.ts";
@@ -43,7 +43,7 @@ export namespace eip6963 {
   }
 
   export function announce() {
-    const detail: EIP6963ProviderDetail = { info, provider: new Ethereum() }
+    const detail: EIP6963ProviderDetail = { info, provider: window.ethereum }
     dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail }))
   }
 
