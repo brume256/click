@@ -4,41 +4,33 @@ import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequest
 
 chrome.storage.session.set({ accounts: [] })
 
+// TODO: wait for user to select an account
 chrome.sidePanel.onOpened.addListener(() => chrome.storage.session.set({ accounts: ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"] }))
 chrome.sidePanel.onClosed.addListener(() => chrome.storage.session.set({ accounts: [] }))
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
-async function route(request: RpcRequest) {
-  if (request.method === "eth_accounts")
-    return await chrome.storage.session.get<{ accounts: string[] }>("accounts").then(x => x.accounts)
-  if (request.method === "eth_requestAccounts") {
-    const accounts = await chrome.storage.session.get<{ accounts: string[] }>("accounts").then(x => x.accounts)
-
-    if (accounts.length)
-      return accounts
-
-    chrome.action.setBadgeText({ text: "1" })
-    chrome.action.setBadgeBackgroundColor({ color: "blue" })
-
-    const { promise, resolve } = Promise.withResolvers<void>()
-
-    const onOpened = () => resolve()
-
-    chrome.sidePanel.onOpened.addListener(onOpened)
-
-    await promise
-
-    chrome.sidePanel.onOpened.removeListener(onOpened)
-
-    return await chrome.storage.session.get<{ accounts: string[] }>("accounts").then(x => x.accounts)
-  }
-
-  throw new RpcMethodNotFoundError()
-}
-
 chrome.runtime.onConnect.addListener((port) => {
   const stack = new DisposableStack()
+
+  if (port.sender?.tab?.id == null)
+    return
+
+  const tabId = port.sender?.tab?.id
+
+  const route = async (request: RpcRequest) => {
+    if (request.method === "eth_accounts")
+      return await chrome.storage.session.get<{ accounts: string[] }>("accounts").then(x => x.accounts)
+    if (request.method === "eth_requestAccounts") {
+      await chrome.sidePanel.open({ tabId })
+
+      // TODO: wait for user to select an account
+
+      return ["0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
+    }
+
+    throw new RpcMethodNotFoundError()
+  }
 
   const onMessage = async (init: RpcRequestInit) => {
     try {
