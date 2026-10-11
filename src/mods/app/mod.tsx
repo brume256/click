@@ -79,7 +79,15 @@ export function App() {
   const [enabled, setEnabled] = useState(false)
 
   useEffect(() => {
-    request<boolean>({ method: "enabled", params: [origin] }).then(setEnabled)
+    if (origin == null)
+      return
+
+    request<boolean>({
+      method: "enabled",
+      params: [origin]
+    }).then(setEnabled)
+
+    return
   }, [request, origin])
 
   const onEnable = useCallback(async () => {
