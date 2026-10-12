@@ -4,6 +4,7 @@ import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequest
 
 const accounts = new Map<string, string>()
 const requests = new Map<string, (account: string) => void>()
+const channels = new Map<chrome.runtime.Port, string>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
@@ -99,6 +100,9 @@ chrome.runtime.onConnect.addListener((port) => {
   stack.defer(() => port.onMessage.removeListener(onMessage))
   stack.defer(() => port.onDisconnect.removeListener(onDisconnect))
 
+  channels.set(port, origin)
+  stack.defer(() => channels.delete(port))
+
   return
 })
 
@@ -138,6 +142,15 @@ chrome.runtime.onConnect.addListener((port) => {
       accounts.set(origin, account)
       requests.get(origin)?.(account)
 
+      for (const channel of channels) {
+        const [port, origin2] = channel
+
+        if (origin2 !== origin)
+          continue
+
+        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account]))
+      }
+
       return true
     }
 
@@ -145,6 +158,15 @@ chrome.runtime.onConnect.addListener((port) => {
       const [origin] = request.params as [string]
 
       accounts.delete(origin)
+
+      for (const channel of channels) {
+        const [port, origin2] = channel
+
+        if (origin2 !== origin)
+          continue
+
+        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", []))
+      }
 
       return true
     }
