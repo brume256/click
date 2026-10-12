@@ -101,16 +101,16 @@ export function App() {
     return null
 
   return <div className="h-full w-full flex flex-col items-center p-8">
-    <div className="w-full bg-default-contrast po-2 rounded-xl flex justify-center">
+    <div className="w-[18rem] bg-default-contrast po-2 rounded-xl flex justify-center">
       {origin}
     </div>
     <div className="h-4" />
     {!account && <Fragment>
-      <div className="w-[min(20rem,100%)] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center animate-opacity-in">
+      <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center animate-opacity-in">
       </div>
     </Fragment>}
     {account && <Fragment key={account}>
-      <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in"
+      <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in"
         data-theme="opposite"
         onClick={onDisconnect}>
         <div className="font-medium">
@@ -124,12 +124,12 @@ export function App() {
       </button>
     </Fragment>}
     <div className="h-4 grow" />
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col items-center">
       {accounts.map((x, i) =>
         <Fragment key={x}>
           <AccountCard index={i} address={x} connect={onConnect} />
         </Fragment>)}
-      <div className="mt-[-40%] w-[min(20rem,100%)] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
+      <div className="mt-[-7rem] w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
         style={{ zIndex: accounts.length }}>
         <Outline.PlusIcon className="size-8" />
       </div>
@@ -144,12 +144,18 @@ export function AccountCard(props: { index: number } & { address: string } & { c
     connect(address)
   }, [connect, address])
 
-  return <button type="button" className="mt-[-40%] w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform"
+  return <button type="button" className="mt-[-7rem] w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform"
     style={{ zIndex: index }}
     data-theme="opposite"
     onClick={onClick}>
-    <div className="font-medium">
-      {address.slice(0, 6) + "..." + address.slice(-4)}
+    <div className="w-full flex items-center">
+      <div className="font-medium">
+        {address.slice(0, 6) + "..." + address.slice(-4)}
+      </div>
+      <div className="w-4 grow" />
+      <button>
+        <Outline.EllipsisVerticalIcon className="size-5" />
+      </button>
     </div>
     <div className="grow" />
     <div className="bg-default-contrast rounded-full po-1 flex items-center gap-2">
