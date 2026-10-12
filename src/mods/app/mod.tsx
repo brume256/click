@@ -6,6 +6,11 @@ import React, { Fragment, useCallback, useEffect, useMemo, useState } from "reac
 
 React;
 
+const accounts = [
+  "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  "0x1234567890abcdef1234567890abcdef12345678"
+]
+
 export function App() {
   const port = useMemo(() => {
     return chrome.runtime.connect()
@@ -73,23 +78,23 @@ export function App() {
     request<string>({ method: "chrome_tab" }).then(setOrigin)
   }, [request])
 
-  const [enabled, setEnabled] = useState(false)
+  const [account, setAccount] = useState<string>()
 
   useEffect(() => {
     if (origin == null)
       return
 
-    request<boolean>({ method: "account_get", params: [origin] }).then(setEnabled)
+    request<string>({ method: "account_get", params: [origin] }).then(setAccount)
 
     return
   }, [request, origin])
 
-  const onConnect = useCallback(async () => {
-    await request({ method: "account_connect", params: [origin, "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"] }).then(() => setEnabled(true))
+  const onConnect = useCallback(async (address: string) => {
+    await request({ method: "account_connect", params: [origin, address] }).then(() => setAccount(address))
   }, [request, origin])
 
   const onDisconnect = useCallback(async () => {
-    await request({ method: "account_disconnect", params: [origin] }).then(() => setEnabled(false))
+    await request({ method: "account_disconnect", params: [origin] }).then(() => setAccount(undefined))
   }, [request, origin])
 
   if (origin == null)
@@ -100,32 +105,16 @@ export function App() {
       {origin}
     </div>
     <div className="h-4" />
-    {!enabled && <Fragment>
-      <div className="w-[min(20rem,100%)] aspect-video border-2 border-default-contrast border-spacing-1 rounded-xl flex items-center justify-center">
-        Select a wallet
+    {!account && <Fragment>
+      <div className="w-[min(20rem,100%)] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center animate-opacity-in">
       </div>
     </Fragment>}
-    <div className="h-4" />
-    {!enabled && <Fragment>
-      <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default rounded-xl font-medium p-4 flex flex-col items-start"
-        data-theme="opposite"
-        onClick={onConnect}>
-        <div className="">
-          Vitalik
-        </div>
-        <div className="grow" />
-        <div className="bg-default-contrast rounded-full po-1 flex items-center gap-2">
-          <Outline.LinkIcon className="size-5" />
-          WalletConnect
-        </div>
-      </button>
-    </Fragment>}
-    {enabled && <Fragment>
-      <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast border-spacing-1 rounded-xl font-medium p-4 flex flex-col items-start"
+    {account && <Fragment key={account}>
+      <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in"
         data-theme="opposite"
         onClick={onDisconnect}>
-        <div className="">
-          Vitalik
+        <div className="font-medium">
+          {account.slice(0, 6) + "..." + account.slice(-4)}
         </div>
         <div className="grow" />
         <div className="bg-default-contrast rounded-full po-1 flex items-center gap-2">
@@ -135,9 +124,36 @@ export function App() {
       </button>
     </Fragment>}
     <div className="h-4" />
-    <div className="w-[min(20rem,100%)] aspect-video border-2 border-default-contrast border-dashed rounded-xl flex items-center justify-center">
+    {accounts.map((x, i) =>
+      <Fragment key={x}>
+        <AccountCard index={i} address={x} connect={onConnect} />
+      </Fragment>)}
+    <div className="w-[min(20rem,100%)] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
+      style={{ transform: `translateY(calc(${accounts.length} * -70%))` }}>
       <Outline.PlusIcon className="size-8" />
     </div>
   </div>
+}
+
+export function AccountCard(props: { index: number } & { address: string } & { connect(address: string): void }) {
+  const { index, address, connect } = props
+
+  const onClick = useCallback(() => {
+    connect(address)
+  }, [connect, address])
+
+  return <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform"
+    style={{ transform: `translateY(calc(${index} * -70%))` }}
+    data-theme="opposite"
+    onClick={onClick}>
+    <div className="font-medium">
+      {address.slice(0, 6) + "..." + address.slice(-4)}
+    </div>
+    <div className="grow" />
+    <div className="bg-default-contrast rounded-full po-1 flex items-center gap-2">
+      <Outline.LinkIcon className="size-5" />
+      WalletConnect
+    </div>
+  </button>
 }
 
