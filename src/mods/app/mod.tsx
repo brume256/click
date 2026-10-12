@@ -50,7 +50,7 @@ export function App() {
   const [origin, setOrigin] = useState<string>()
 
   useEffect(() => {
-    request<string>({ method: "chrome_tabUrl" }).then(setOrigin)
+    request<string>({ method: "chrome_tab" }).then(setOrigin)
   }, [request])
 
   useEffect(() => {
@@ -82,27 +82,26 @@ export function App() {
     if (origin == null)
       return
 
-    request<boolean>({
-      method: "enabled",
-      params: [origin]
-    }).then(setEnabled)
+    request<boolean>({ method: "account_get", params: [origin] }).then(setEnabled)
 
     return
   }, [request, origin])
 
-  const onEnable = useCallback(async () => {
-    await request({ method: "enable", params: [origin] }).then(() => setEnabled(true))
+  const onConnect = useCallback(async () => {
+    await request({ method: "account_connect", params: [origin, "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"] }).then(() => setEnabled(true))
   }, [request, origin])
 
-  const onDisable = useCallback(async () => {
-    await request({ method: "disable", params: [origin] }).then(() => setEnabled(false))
+  const onDisconnect = useCallback(async () => {
+    await request({ method: "account_disconnect", params: [origin] }).then(() => setEnabled(false))
   }, [request, origin])
 
   if (origin == null)
     return null
 
   return <div className="h-full w-full flex flex-col items-center p-8">
-    {origin}
+    <div className="w-full bg-default-contrast po-2 rounded-xl flex justify-center">
+      {origin}
+    </div>
     <div className="h-4" />
     {!enabled && <Fragment>
       <div className="w-[min(20rem,100%)] aspect-video border-2 border-default-contrast border-spacing-1 rounded-xl flex items-center justify-center">
@@ -111,9 +110,9 @@ export function App() {
     </Fragment>}
     <div className="h-4" />
     {!enabled && <Fragment>
-      <button className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default rounded-xl font-medium p-4 flex flex-col items-start"
+      <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default rounded-xl font-medium p-4 flex flex-col items-start"
         data-theme="opposite"
-        onClick={onEnable}>
+        onClick={onConnect}>
         <div className="">
           Vitalik
         </div>
@@ -125,9 +124,9 @@ export function App() {
       </button>
     </Fragment>}
     {enabled && <Fragment>
-      <button className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast border-spacing-1 rounded-xl font-medium p-4 flex flex-col items-start"
+      <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast border-spacing-1 rounded-xl font-medium p-4 flex flex-col items-start"
         data-theme="opposite"
-        onClick={onDisable}>
+        onClick={onDisconnect}>
         <div className="">
           Vitalik
         </div>

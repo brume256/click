@@ -1,8 +1,9 @@
 /// <reference types="chrome" />
 
-import { RpcErr, RpcError, RpcInternalError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
+import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
 
 const accounts = new Map<string, string>()
+const requests = new Map<string, (account: string) => void>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
@@ -46,9 +47,19 @@ chrome.runtime.onConnect.addListener((port) => {
       if (account != null)
         return [account]
 
+      using stack = new DisposableStack()
+
       await chrome.sidePanel.open({ windowId })
 
-      throw new RpcInternalError()
+      const { promise, resolve, reject } = Promise.withResolvers<string>()
+
+      requests.set(origin, resolve)
+      stack.defer(() => requests.delete(origin))
+
+      chrome.sidePanel.onClosed.addListener(reject)
+      stack.defer(() => chrome.sidePanel.onClosed.removeListener(reject))
+
+      return [await promise]
     }
 
     throw new RpcMethodNotFoundError()
@@ -102,7 +113,7 @@ chrome.runtime.onConnect.addListener((port) => {
     return
 
   const route = async (request: RpcRequest) => {
-    if (request.method === "chrome_tabUrl") {
+    if (request.method === "chrome_tab") {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
 
       if (tab.url == null)
@@ -113,23 +124,24 @@ chrome.runtime.onConnect.addListener((port) => {
       return url.origin
     }
 
-    if (request.method === "enabled") {
+    if (request.method === "account_get") {
       const [origin] = request.params as [string]
 
-      const enabled = accounts.has(origin)
+      const account = accounts.has(origin)
 
-      return enabled
+      return account
     }
 
-    if (request.method === "enable") {
-      const [origin] = request.params as [string]
+    if (request.method === "account_connect") {
+      const [origin, account] = request.params as [string, string]
 
-      accounts.set(origin, "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+      accounts.set(origin, account)
+      requests.get(origin)?.(account)
 
       return true
     }
 
-    if (request.method === "disable") {
+    if (request.method === "account_disconnect") {
       const [origin] = request.params as [string]
 
       accounts.delete(origin)
