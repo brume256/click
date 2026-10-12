@@ -123,14 +123,16 @@ export function App() {
         </div>
       </button>
     </Fragment>}
-    <div className="h-4" />
-    {accounts.map((x, i) =>
-      <Fragment key={x}>
-        <AccountCard index={i} address={x} connect={onConnect} />
-      </Fragment>)}
-    <div className="w-[min(20rem,100%)] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
-      style={{ transform: `translateY(calc(${accounts.length} * -70%))` }}>
-      <Outline.PlusIcon className="size-8" />
+    <div className="h-4 grow" />
+    <div className="w-full flex flex-col">
+      {accounts.map((x, i) =>
+        <Fragment key={x}>
+          <AccountCard index={i} address={x} connect={onConnect} />
+        </Fragment>)}
+      <div className="mt-[-40%] w-[min(20rem,100%)] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
+        style={{ zIndex: accounts.length }}>
+        <Outline.PlusIcon className="size-8" />
+      </div>
     </div>
   </div>
 }
@@ -142,8 +144,8 @@ export function AccountCard(props: { index: number } & { address: string } & { c
     connect(address)
   }, [connect, address])
 
-  return <button type="button" className="w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform"
-    style={{ transform: `translateY(calc(${index} * -70%))` }}
+  return <button type="button" className="mt-[-40%] w-[min(20rem,100%)] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform"
+    style={{ zIndex: index }}
     data-theme="opposite"
     onClick={onClick}>
     <div className="font-medium">
