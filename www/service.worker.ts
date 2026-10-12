@@ -127,7 +127,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "account_get") {
       const [origin] = request.params as [string]
 
-      const account = accounts.has(origin)
+      const account = accounts.get(origin)
 
       return account
     }

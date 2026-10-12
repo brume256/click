@@ -9,7 +9,8 @@ React;
 
 const accounts = [
   { name: "Vitalik", address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", color: "blue" },
-  { name: "Alice", address: "0x1234567890abcdef1234567890abcdef12345678", color: "red" }
+  { name: "Alice", address: "0x1234567890abcdef1234567890abcdef12345678", color: "red" },
+  { name: "Bob", address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd", color: "green" }
 ]
 
 export function App() {
@@ -102,16 +103,12 @@ export function App() {
     return null
 
   return <div className="h-full w-full flex flex-col items-center p-8">
-    <div className="w-[18rem] bg-default-contrast po-2 rounded-xl flex justify-center">
-      {origin}
-    </div>
-    <div className="h-4" />
     {!account && <Fragment>
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center animate-opacity-in">
       </div>
     </Fragment>}
     {account && <Fragment key={account}>
-      <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in
+      <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 transition-transform
       data-[color=red]:bg-red-400 
       data-[color=orange]:bg-orange-400 
       data-[color=amber]:bg-amber-400 
@@ -149,11 +146,11 @@ export function App() {
         data-theme={accounts.find(x => x.address === account)?.color == null ? "opposite" : "dark"}
         data-color={accounts.find(x => x.address === account)?.color}
         onClick={onDisconnect}>
-        <div className="font-medium">
+        <div className="font-medium text-lg">
           {accounts.find(x => x.address === account)?.name}
         </div>
         <div className="grow" />
-        <div className="bg-default-contrast rounded-full po-1 flex items-center gap-2">
+        <div className="bg-default-contrast rounded-xl po-1 flex items-center gap-2">
           <Outline.LinkIcon className="size-5" />
           WalletConnect
         </div>
@@ -220,18 +217,13 @@ export function AccountCard(props: { index: number } & { name: string } & { addr
     data-color={color}
     onClick={onClick}>
     <div className="w-full flex items-center">
-      <div className="font-medium">
+      <div className="font-medium text-lg">
         {name}
       </div>
       <div className="w-4 grow" />
       <button>
         <Outline.EllipsisVerticalIcon className="size-5" />
       </button>
-    </div>
-    <div className="grow" />
-    <div className="bg-default-contrast rounded-full po-1 flex items-center gap-2">
-      <Outline.LinkIcon className="size-5" />
-      WalletConnect
     </div>
   </button>
 }
