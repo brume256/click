@@ -23,8 +23,6 @@ export function App() {
     const { promise, resolve } = Promise.withResolvers<RpcResponse>()
 
     const onMessage = (message: RpcMessageInit) => {
-      console.log("received", message)
-
       if ("method" in message === true)
         return
 
@@ -49,32 +47,31 @@ export function App() {
 
   const [origin, setOrigin] = useState<string>()
 
-  useEffect(() => {
-    request<string>({ method: "chrome_tab" }).then(setOrigin)
-  }, [request])
+  const onMessage = useCallback((message: RpcMessageInit) => {
+    if ("method" in message === false)
+      return
 
-  useEffect(() => {
-    const onMessage = (message: RpcMessageInit) => {
-      if ("method" in message === false)
-        return
+    const request = RpcRequest.from(message)
 
-      const request = RpcRequest.from(message)
+    if (request.method === "chrome_tabChanged") {
+      const [origin] = request.params as [string]
 
-      if (request.method === "chrome_tabChanged") {
-        const [origin] = request.params as [string]
-
-        setOrigin(origin)
-
-        return
-      }
+      setOrigin(origin)
 
       return
     }
 
-    port.onMessage.addListener(onMessage)
+    return
+  }, [])
 
+  useEffect(() => {
+    port.onMessage.addListener(onMessage)
     return () => port.onMessage.removeListener(onMessage)
-  }, [port])
+  }, [port, onMessage])
+
+  useEffect(() => {
+    request<string>({ method: "chrome_tab" }).then(setOrigin)
+  }, [request])
 
   const [enabled, setEnabled] = useState(false)
 
