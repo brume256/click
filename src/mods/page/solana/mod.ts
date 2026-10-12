@@ -47,16 +47,6 @@ export class Solana extends EventEmitter {
 
 }
 
-export namespace solana {
-
-  export const provider = new Solana()
-
-  window.solana = provider
-
-  window.phantom = { solana: provider }
-
-}
-
 export interface WalletStandardWalletInfo {
   readonly version: string
 
@@ -83,6 +73,12 @@ declare global {
 }
 
 export namespace wallet {
+
+  export const provider = new Solana()
+
+  window.solana = provider
+
+  window.phantom = { solana: provider }
 
   const dummy = {
     address: "4kPAZS6jyqkotTAJB9eiPcLwhj483oQhVeMEaR7hamJS",
@@ -112,8 +108,8 @@ export namespace wallet {
       "standard:events": {
         version: "1.0.0",
         on: (name: string, listener: (...args: any[]) => void) => {
-          window.solana.on(name, listener)
-          return () => window.solana.off(name, listener)
+          provider.on(name, listener)
+          return () => provider.off(name, listener)
         },
       },
       "solana:signMessage": {

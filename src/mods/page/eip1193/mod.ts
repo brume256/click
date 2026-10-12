@@ -60,7 +60,7 @@ export class Ethereum extends EventEmitter {
 
 }
 
-export namespace ethereum {
+export namespace eip1193 {
 
   export const provider = new Ethereum()
 
