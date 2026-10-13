@@ -1,9 +1,22 @@
 /// <reference types="chrome" />
 
+import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
 
-const accounts = new Map<string, string>()
-const requests = new Map<string, (account: string) => void>()
+interface Addresses {
+  readonly eth: string
+  readonly sol: string
+}
+
+interface Account {
+  readonly title: string
+  readonly addrs: Addresses
+  readonly color: Nullable<string>
+}
+
+const accounts = new Map<string, Account>()
+const requests = new Map<string, PromiseWithResolvers<Account>>()
+
 const channels = new Map<chrome.runtime.Port, string>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
@@ -37,7 +50,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const account = accounts.get(origin)
 
       if (account != null)
-        return [account]
+        return [account.addrs.eth]
 
       return []
     }
@@ -46,21 +59,56 @@ chrome.runtime.onConnect.addListener((port) => {
       const account = accounts.get(origin)
 
       if (account != null)
-        return [account]
+        return [account.addrs.eth]
+
+      const previous = requests.get(origin)
+
+      if (previous != null)
+        return await previous.promise
 
       using stack = new DisposableStack()
 
-      await chrome.sidePanel.open({ windowId })
+      const current = Promise.withResolvers<Account>()
 
-      const { promise, resolve, reject } = Promise.withResolvers<string>()
-
-      requests.set(origin, resolve)
+      requests.set(origin, current)
       stack.defer(() => requests.delete(origin))
 
-      chrome.sidePanel.onClosed.addListener(reject)
-      stack.defer(() => chrome.sidePanel.onClosed.removeListener(reject))
+      chrome.sidePanel.onClosed.addListener(current.reject)
+      stack.defer(() => chrome.sidePanel.onClosed.removeListener(current.reject))
 
-      return [await promise]
+      await chrome.sidePanel.open({ windowId })
+
+      const account2 = await current.promise
+
+      return [account2.addrs.eth]
+    }
+
+    if (request.method === "connect") {
+      const account = accounts.get(origin)
+
+      if (account != null)
+        return [account.addrs.sol]
+
+      const previous = requests.get(origin)
+
+      if (previous != null)
+        return await previous.promise
+
+      using stack = new DisposableStack()
+
+      const current = Promise.withResolvers<Account>()
+
+      requests.set(origin, current)
+      stack.defer(() => requests.delete(origin))
+
+      chrome.sidePanel.onClosed.addListener(current.reject)
+      stack.defer(() => chrome.sidePanel.onClosed.removeListener(current.reject))
+
+      await chrome.sidePanel.open({ windowId })
+
+      const account2 = await current.promise
+
+      return [account2.addrs.sol]
     }
 
     throw new RpcMethodNotFoundError()
@@ -137,10 +185,10 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "account_connect") {
-      const [origin, account] = request.params as [string, string]
+      const [origin, account] = request.params as [string, Account]
 
       accounts.set(origin, account)
-      requests.get(origin)?.(account)
+      requests.get(origin)?.resolve(account)
 
       for (const channel of channels) {
         const [port, origin2] = channel
@@ -148,7 +196,7 @@ chrome.runtime.onConnect.addListener((port) => {
         if (origin2 !== origin)
           continue
 
-        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account]))
+        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account.addrs.eth]))
       }
 
       return true

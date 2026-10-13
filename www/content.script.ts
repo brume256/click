@@ -117,8 +117,12 @@ namespace frontend {
       return await backend.request(request)
     if (request.method === "eth_requestAccounts")
       return await backend.request(request)
+
     if (request.method === "wallet_requestPermissions")
       return { parentCapability: "eth_accounts", caveats: [] }
+
+    if (request.method === "connect")
+      return await backend.request(request)
 
     throw new RpcMethodNotFoundError()
   }

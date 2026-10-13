@@ -7,9 +7,14 @@ import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@haz
 import React, { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 React;
 
+interface Addresses {
+  readonly eth: string
+  readonly sol: string
+}
+
 interface Account {
-  readonly name: string
-  readonly address: { ethereum: string, solana: string }
+  readonly title: string
+  readonly addrs: Addresses
   readonly color: Nullable<string>
 }
 
@@ -80,19 +85,19 @@ export function App() {
     request<string>({ method: "chrome_tab" }).then(setOrigin)
   }, [request])
 
-  const [account, setAccount] = useState<string>()
+  const [account, setAccount] = useState<Account>()
 
   useEffect(() => {
     if (origin == null)
       return
 
-    request<string>({ method: "account_get", params: [origin] }).then(setAccount)
+    request<Account>({ method: "account_get", params: [origin] }).then(setAccount)
 
     return
   }, [request, origin])
 
-  const onConnect = useCallback(async (address: string) => {
-    await request({ method: "account_connect", params: [origin, address] }).then(() => setAccount(address))
+  const onConnect = useCallback(async (account: Account) => {
+    await request({ method: "account_connect", params: [origin, account] }).then(() => setAccount(account))
   }, [request, origin])
 
   const onDisconnect = useCallback(async () => {
@@ -102,10 +107,10 @@ export function App() {
   const [accounts, setAccounts] = useState<Account[]>([])
 
   const onPlusClick = useCallback(() => {
-    const name = `Account #${accounts.length + 1}`
-    const address = { ethereum: `0x${crypto.getRandomValues(new Uint8Array(20)).toHex()}`, solana: base58.encode(crypto.getRandomValues(new Uint8Array(32))) }
+    const title = `Account #${accounts.length + 1}`
+    const addrs = { eth: `0x${crypto.getRandomValues(new Uint8Array(20)).toHex()}`, sol: base58.encode(crypto.getRandomValues(new Uint8Array(32))) }
     const color = ["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][accounts.length % 16]
-    setAccounts([...accounts, { name, address, color }])
+    setAccounts([...accounts, { title, addrs, color }])
   }, [accounts])
 
   if (origin == null)
@@ -116,7 +121,7 @@ export function App() {
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center animate-opacity-in">
       </div>
     </Fragment>}
-    {account && <Fragment key={account}>
+    {account && <Fragment key={account.addrs.eth}>
       <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 transition-transform
       data-[color=red]:bg-red-400 
       data-[color=orange]:bg-orange-400 
@@ -152,11 +157,11 @@ export function App() {
       in-dark:data-[color=fuchsia]:bg-fuchsia-500
       in-dark:data-[color=pink]:bg-pink-500
       in-dark:data-[color=rose]:bg-rose-500"
-        data-theme={accounts.find(x => x.address.ethereum === account)?.color == null ? "opposite" : "dark"}
-        data-color={accounts.find(x => x.address.ethereum === account)?.color}
+        data-theme={accounts.find(x => x.addrs.eth === account.addrs.eth)?.color == null ? "opposite" : "dark"}
+        data-color={accounts.find(x => x.addrs.eth === account.addrs.eth)?.color}
         onClick={onDisconnect}>
         <div className="font-medium text-lg">
-          {accounts.find(x => x.address.ethereum === account)?.name}
+          {accounts.find(x => x.addrs.eth === account.addrs.eth)?.title}
         </div>
         <div className="grow" />
         <div className="bg-default-contrast rounded-xl po-1 flex items-center gap-2">
@@ -168,8 +173,8 @@ export function App() {
     <div className="h-4 grow shrink-0" />
     <div className="mt-28 w-full flex flex-col items-center">
       {accounts.map((x, i) =>
-        <Fragment key={x.address.ethereum}>
-          <AccountCard index={i} name={x.name} address={x.address.ethereum} color={x.color} connect={onConnect} />
+        <Fragment key={x.addrs.eth}>
+          <AccountCard index={i} account={x} connect={onConnect} />
         </Fragment>)}
       <button type="button" className="-mt-28 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
         style={{ zIndex: accounts.length }}
@@ -180,12 +185,12 @@ export function App() {
   </div>
 }
 
-export function AccountCard(props: { index: number } & { name: string } & { address: string } & { color: Nullable<string> } & { connect(address: string): void }) {
-  const { index, name, address, color, connect } = props
+export function AccountCard(props: { index: number } & { account: Account } & { connect(account: Account): void }) {
+  const { index, account, connect } = props
 
   const onClick = useCallback(() => {
-    connect(address)
-  }, [connect, address])
+    connect(account)
+  }, [connect, account])
 
   return <button type="button" className="-mt-28 w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
   data-[color=red]:bg-red-400 
@@ -223,15 +228,15 @@ export function AccountCard(props: { index: number } & { name: string } & { addr
   in-dark:data-[color=pink]:bg-pink-500
   in-dark:data-[color=rose]:bg-rose-500"
     style={{ zIndex: index }}
-    data-theme={color == null ? "opposite" : "dark"}
-    data-color={color}
+    data-theme={account.color == null ? "opposite" : "dark"}
+    data-color={account.color}
     onClick={onClick}>
     <div className="w-full flex items-center">
       <div className="font-medium text-lg">
-        {name}
+        {account.title}
       </div>
       <div className="w-4 grow" />
-      <button>
+      <button type="button">
         <Outline.EllipsisVerticalIcon className="size-5" />
       </button>
     </div>

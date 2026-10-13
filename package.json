@@ -39,6 +39,7 @@
     "@hazae41/symbol-dispose-polyfill": "1.1.2",
     "@hazae41/webauthnstorage": "^1.1.0",
     "@heroicons/react": "2.2.0",
+    "buffer": "^6.0.3",
     "events": "^3.3.0",
     "jsqr": "1.4.0",
     "react": "19.3.0",
