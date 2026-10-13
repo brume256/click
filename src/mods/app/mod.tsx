@@ -2,16 +2,16 @@
 
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
+import { base58 } from "@hazae41/base58";
 import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
 import React, { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-
 React;
 
-const accounts = [
-  { name: "Vitalik", address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", color: "blue" },
-  { name: "Alice", address: "0x1234567890abcdef1234567890abcdef12345678", color: "red" },
-  { name: "Bob", address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd", color: "green" }
-]
+interface Account {
+  readonly name: string
+  readonly address: { ethereum: string, solana: string }
+  readonly color: Nullable<string>
+}
 
 export function App() {
   const port = useMemo(() => {
@@ -99,6 +99,15 @@ export function App() {
     await request({ method: "account_disconnect", params: [origin] }).then(() => setAccount(undefined))
   }, [request, origin])
 
+  const [accounts, setAccounts] = useState<Account[]>([])
+
+  const onPlusClick = useCallback(() => {
+    const name = `Account #${accounts.length + 1}`
+    const address = { ethereum: `0x${crypto.getRandomValues(new Uint8Array(20)).toHex()}`, solana: base58.encode(crypto.getRandomValues(new Uint8Array(32))) }
+    const color = ["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][accounts.length % 16]
+    setAccounts([...accounts, { name, address, color }])
+  }, [accounts])
+
   if (origin == null)
     return null
 
@@ -143,11 +152,11 @@ export function App() {
       in-dark:data-[color=fuchsia]:bg-fuchsia-500
       in-dark:data-[color=pink]:bg-pink-500
       in-dark:data-[color=rose]:bg-rose-500"
-        data-theme={accounts.find(x => x.address === account)?.color == null ? "opposite" : "dark"}
-        data-color={accounts.find(x => x.address === account)?.color}
+        data-theme={accounts.find(x => x.address.ethereum === account)?.color == null ? "opposite" : "dark"}
+        data-color={accounts.find(x => x.address.ethereum === account)?.color}
         onClick={onDisconnect}>
         <div className="font-medium text-lg">
-          {accounts.find(x => x.address === account)?.name}
+          {accounts.find(x => x.address.ethereum === account)?.name}
         </div>
         <div className="grow" />
         <div className="bg-default-contrast rounded-xl po-1 flex items-center gap-2">
@@ -156,16 +165,17 @@ export function App() {
         </div>
       </button>
     </Fragment>}
-    <div className="h-4 grow" />
-    <div className="w-full flex flex-col items-center">
+    <div className="h-4 grow shrink-0" />
+    <div className="mt-28 w-full flex flex-col items-center">
       {accounts.map((x, i) =>
-        <Fragment key={x.address}>
-          <AccountCard index={i} name={x.name} address={x.address} color={x.color} connect={onConnect} />
+        <Fragment key={x.address.ethereum}>
+          <AccountCard index={i} name={x.name} address={x.address.ethereum} color={x.color} connect={onConnect} />
         </Fragment>)}
-      <div className="-mt-28 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
-        style={{ zIndex: accounts.length }}>
+      <button type="button" className="-mt-28 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
+        style={{ zIndex: accounts.length }}
+        onClick={onPlusClick}>
         <Outline.PlusIcon className="size-8" />
-      </div>
+      </button>
     </div>
   </div>
 }
