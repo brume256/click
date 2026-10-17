@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-namespace
+
 export namespace Strings {
 
   export function capitalize(string: string) {

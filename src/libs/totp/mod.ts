@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace
+// deno-lint-ignore-file
 
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { Sha1Totp } from "@hazae41/pendule";

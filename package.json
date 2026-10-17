@@ -4,7 +4,6 @@
   "version": "2.0.1",
   "scripts": {
     "process:chainlist": "deno x --unstable-worker-options saumon ./src/libs/chainlist/mod.macro.ts",
-    "process:version": "deno x --unstable-worker-options saumon ./src/libs/version/mod.macro.ts",
     "examine": "deno lint ./src && deno check ./src && deno test ./src",
     "prepack": "deno x glace ./www --out=./out",
     "version": "npm run process:version && git add ."

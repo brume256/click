@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-namespace
+
 import { Cursor } from "@hazae41/cursor";
 
 export namespace ed25519 {
