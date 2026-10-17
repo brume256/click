@@ -1,8 +1,10 @@
-// deno-lint-ignore-file no-namespace require-await no-window no-explicit-any
+// deno-lint-ignore-file no-namespace require-await no-window no-explicit-any no-unused-vars
 
+import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { pipe } from "@/mods/page/pipe/mod.ts";
 import { base58 } from "@hazae41/base58";
+import { RpcMethodNotFoundError, RpcRequestPreinit } from "@hazae41/jsonrpc";
 import { Buffer } from "buffer";
 import { EventEmitter } from "events";
 
@@ -57,7 +59,7 @@ export class SolanaPublicKey {
   }
 
   equals(other: SolanaPublicKey) {
-    return this.publicKeyAsBase58 === other.publicKeyAsBase58
+    return this.toString() === other.toString()
   }
 
   encode() {
@@ -94,14 +96,26 @@ export class SolanaProvider extends EventEmitter {
     return this.#current
   }
 
-  async connect() {
-    const publicKey = new SolanaPublicKey(await pipe.request<string>({ method: "connect" }))
+  async request(init: RpcRequestPreinit<any>) {
+    if (init.method === "connect")
+      return await this.connect(init.params)
+    if (init.method === "disconnect")
+      return await this.disconnect()
+    // if (init.method === "signMessage")
+    //   return await this.signMessage()
+    // if (init.method === "signTransaction")
+    //   return await this.signTransaction()
+    throw new RpcMethodNotFoundError()
+  }
+
+  async connect(params: { onlyIfTrusted?: boolean } = {}): Promise<{ publicKey: SolanaPublicKey }> {
+    const publicKey = new SolanaPublicKey(await pipe.request<string>({ method: "connect", params }))
 
     this.#current = publicKey
 
-    this.emit("connect")
+    this.emit("connect", publicKey)
 
-    return publicKey
+    return { publicKey }
   }
 
   async disconnect() {
@@ -112,17 +126,17 @@ export class SolanaProvider extends EventEmitter {
     return
   }
 
-  async signMessage() {
+  async signMessage(message: Uint8Array, display?: "utf8" | "hex") {
     throw new Error("Not implemented")
   }
 
-  async signTransaction() {
+  async signTransaction(transaction: unknown) {
     throw new Error("Not implemented")
   }
 
 }
 
-export interface WalletStandardWalletInfo {
+export interface Wallet {
   readonly version: string
 
   readonly name: string
@@ -134,15 +148,24 @@ export interface WalletStandardWalletInfo {
   readonly features: Record<string, unknown>
 }
 
-export interface WalletStandardApp {
-  register(info: WalletStandardWalletInfo): void
+export interface WalletAccount {
+  readonly address: string
+  readonly publicKey: Uint8Array
+  readonly chains: string[]
+  readonly features: string[]
+  readonly label?: string
+  readonly icon?: string
+}
+
+export interface WalletApp {
+  register(wallet: Wallet): void
 }
 
 declare global {
 
   export interface WindowEventMap {
-    "wallet-standard:app-ready": CustomEvent<WalletStandardApp>
-    "wallet-standard:register-wallet": CustomEvent<(app: WalletStandardApp) => void>
+    "wallet-standard:app-ready": CustomEvent<WalletApp>
+    "wallet-standard:register-wallet": CustomEvent<(app: WalletApp) => void>
   }
 
 }
@@ -162,11 +185,11 @@ export namespace wallet {
     features: ["solana:signMessage", "solana:signTransaction"],
   }
 
-  export const info: WalletStandardWalletInfo = {
-    version: pipe.requestSync<string>({ method: "chrome_version" }),
+  export const wallet: Wallet = {
+    version: "1.0.0",
 
     name: pipe.requestSync<string>({ method: "chrome_name" }),
-    icon: pipe.requestSync<string>({ method: "chrome_url", params: ["/padicon.png"] }),
+    icon: icon,
 
     chains: ["solana:mainnet", "solana:devnet"],
 
@@ -189,23 +212,28 @@ export namespace wallet {
       },
       "solana:signMessage": {
         version: "1.0.0",
-        signMessage: () => provider.signMessage(),
+        signMessage: (params: { account: WalletAccount, message: Uint8Array }) => {
+          const { account, message } = params
+          throw new Error("Not implemented")
+        },
       },
       "solana:signTransaction": {
         version: "1.0.0",
         supportedTransactionVersions: ["legacy", 0, 1],
-        signTransaction: () => provider.signTransaction(),
+        signTransaction: () => {
+          throw new Error("Not implemented")
+        },
       }
     }
   }
 
   export function announce() {
-    const detail = (app: WalletStandardApp) => app.register(info)
+    const detail = (app: WalletApp) => app.register(wallet)
     dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
   }
 
   addEventListener("wallet-standard:app-ready", (event) => {
-    event.detail.register(info)
+    event.detail.register(wallet)
   }, { passive: true })
 
   announce()

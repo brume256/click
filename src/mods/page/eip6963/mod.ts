@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-namespace
 
+import { icon } from "@/libs/icon/mod.ts";
 import { eip1193, Ethereum } from "@/mods/page/eip1193/mod.ts";
 import { pipe } from "@/mods/page/pipe/mod.ts";
 
@@ -39,7 +40,7 @@ export namespace eip6963 {
     uuid: pipe.requestSync<string>({ method: "eip6963_uuid" }),
     rdns: pipe.requestSync<string>({ method: "eip6963_rdns" }),
     name: pipe.requestSync<string>({ method: "chrome_name" }),
-    icon: pipe.requestSync<string>({ method: "chrome_url", params: ["/padicon.png"] })
+    icon: icon
   }
 
   export function announce() {
