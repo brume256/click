@@ -47,6 +47,9 @@ chrome.runtime.onConnect.addListener((port) => {
     return
 
   const route = async (request: RpcRequest) => {
+    if (request.method === "ping")
+      return
+
     if (request.method === "eth_accounts") {
       const account = accounts.get(origin)
 
@@ -166,6 +169,9 @@ chrome.runtime.onConnect.addListener((port) => {
     return
 
   const route = async (request: RpcRequest) => {
+    if (request.method === "ping")
+      return
+
     if (request.method === "chrome_location") {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
 

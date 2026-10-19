@@ -76,6 +76,10 @@ namespace backend {
     return
   })
 
+  const interval = setInterval(() => {
+    request({ method: "ping" }).catch(() => clearInterval(interval))
+  }, 1000)
+
 }
 
 namespace frontend {

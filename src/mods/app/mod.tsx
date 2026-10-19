@@ -31,6 +31,14 @@ export function useBackground() {
     return new Channel(port)
   }, [port])
 
+  const interval = useMemo(() => setInterval(() => {
+    channel.request<void>({ method: "ping" }).catch(() => clearInterval(interval))
+  }, 1000), [channel])
+
+  useEffect(() => () => {
+    clearInterval(interval)
+  }, [channel])
+
   return channel
 }
 
