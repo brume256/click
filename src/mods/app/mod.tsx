@@ -116,12 +116,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
   const [account, setAccount] = useState<Account>()
 
   useEffect(() => {
-    if (location == null)
-      return
-
     channel.request<Account>({ method: "account", params: [location] }).then(setAccount)
-
-    return
   }, [channel, location])
 
   const onConnect = useCallback(async (account: Account) => {
@@ -134,11 +129,15 @@ export function App(props: { channel: Channel } & { location: URL }) {
 
   const [accounts, setAccounts] = useState<Account[]>([])
 
-  const onPlusClick = useCallback(() => {
+  useEffect(() => {
+    channel.request<Account[]>({ method: "accounts", params: [location] }).then(setAccounts)
+  }, [channel, location])
+
+  const onPlusClick = useCallback(async () => {
     const title = `Account #${accounts.length + 1}`
     const addrs = { eth: `0x${crypto.getRandomValues(new Uint8Array(20)).toHex()}`, sol: base58.encode(crypto.getRandomValues(new Uint8Array(32))) }
     const color = ["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][accounts.length % 16]
-    setAccounts([...accounts, { title, addrs, color }])
+    await channel.request<Account[]>({ method: "create", params: [{ title, addrs, color }] }).then(setAccounts)
   }, [accounts])
 
   if (location == null)

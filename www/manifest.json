@@ -8,7 +8,8 @@
   },
   "permissions": [
     "tabs",
-    "sidePanel"
+    "sidePanel",
+    "storage"
   ],
   "content_security_policy": {
     "extension_pages": "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';"

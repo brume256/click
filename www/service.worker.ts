@@ -1,4 +1,5 @@
 /// <reference types="chrome" />
+// deno-lint-ignore-file no-empty-pattern
 
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
@@ -221,6 +222,26 @@ chrome.runtime.onConnect.addListener((port) => {
       }
 
       return true
+    }
+
+    if (request.method === "accounts") {
+      const [] = request.params as []
+
+      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
+
+      return accounts
+    }
+
+    if (request.method === "create") {
+      const [account] = request.params as [Account]
+
+      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
+
+      accounts.push(account)
+
+      await chrome.storage.session.set({ accounts })
+
+      return accounts
     }
 
     throw new RpcMethodNotFoundError()
