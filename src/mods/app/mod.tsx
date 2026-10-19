@@ -6,7 +6,7 @@ import { useAnchorWithCoords, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
 import { PathBoard } from "@hazae41/modal";
 import { QrEncoder } from "@hazae41/visage";
-import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 React;
 
@@ -122,7 +122,7 @@ export function useLocation(channel: Channel) {
 }
 
 export function Display(props: {}) {
-  const canvas = useRef<HTMLCanvasElement>(null)
+  const [url, setUrl] = useState<string>()
 
   useEffect(() => {
     const source = new TextEncoder().encode("wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae")
@@ -132,16 +132,21 @@ export function Display(props: {}) {
     const rgba = new ImageData(matrix.width, matrix.width)
 
     for (let i = 0; i < matrix.array.length; i++) {
-      rgba.data[i * 4 + 0] = matrix.array[i] % 2 ? 0 : 255
-      rgba.data[i * 4 + 1] = matrix.array[i] % 2 ? 0 : 255
-      rgba.data[i * 4 + 2] = matrix.array[i] % 2 ? 0 : 255
-      rgba.data[i * 4 + 3] = matrix.array[i] % 2 ? 255 : 0
+      rgba.data[i * 4 + 0] = matrix.array[i] % 2 ? 255 : 0
+      rgba.data[i * 4 + 1] = matrix.array[i] % 2 ? 255 : 0
+      rgba.data[i * 4 + 2] = matrix.array[i] % 2 ? 255 : 0
+      rgba.data[i * 4 + 3] = 255
     }
 
     code.getContext("2d")!.putImageData(rgba, 0, 0)
 
-    canvas.current!.getContext("2d")!.imageSmoothingEnabled = false
-    canvas.current!.getContext("2d")!.drawImage(code, 0, 0, matrix.width, matrix.width, 0, 0, canvas.current!.width, canvas.current!.width)
+    const canvas = new OffscreenCanvas(300, 300)
+
+    const context = canvas.getContext("2d")!
+    context.imageSmoothingEnabled = false
+    context.drawImage(code, 0, 0, matrix.width, matrix.width, 0, 0, canvas.width, canvas.width)
+
+    canvas.convertToBlob({ type: "image/png" }).then((blob) => setUrl(URL.createObjectURL(blob!)))
 
     return
   }, [])
@@ -219,11 +224,14 @@ export function Display(props: {}) {
       Your WalletConnect pairing code.
     </div>
     <div className="h-4 shrink-0" />
-    <input className="p-4 bg-default-contrast rounded-xl"
-      value="wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae" />
-    <div className="h-2 shrink-0" />
-    <div className="hidden flex flex-col items-center justify-center p-4 bg-default-contrast rounded-xl">
-      <canvas ref={canvas} width={200} height={200} />
+    <div className="p-4 bg-default-contrast rounded-xl flex items-center gap-2 truncate">
+      <input className="w-full focus-visible:outline-none" value="wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae" />
+      <a className=""
+        href={url}
+        target="_blank"
+        rel="noreferrer">
+        <Outline.QrCodeIcon className="size-5" />
+      </a>
     </div>
     <div className="h-6 shrink-0 grow" />
     <button className="bg-opposite text-opposite po-2 rounded-xl">
