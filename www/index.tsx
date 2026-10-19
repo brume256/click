@@ -7,7 +7,6 @@ import "@hazae41/disposable-stack-polyfill";
 import "@hazae41/request-idle-callback-polyfill";
 
 import { dirs, Lang } from "@/libs/lang/mod.ts";
-import { StoreProvider } from "@/libs/store/mod.tsx";
 import { App, useBackground, useLocation } from "@/mods/app/mod.tsx";
 import { PathProvider, useHashPath } from "@hazae41/chemin";
 import { Rewind } from "@hazae41/rewind";
@@ -39,11 +38,9 @@ function Body() {
     return null
 
   return <PathProvider value={path}>
-    <StoreProvider>
-      <div className="h-full w-full overflow-y-auto animate-opacity-in text-base">
-        <App channel={channel} location={location} />
-      </div>
-    </StoreProvider>
+    <div className="h-full w-full overflow-y-auto animate-opacity-in text-base">
+      <App channel={channel} location={location} />
+    </div>
   </PathProvider>
 }
 

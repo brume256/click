@@ -287,32 +287,19 @@ chrome.runtime.onConnect.addListener((port) => {
   stack.defer(() => port.onMessage.removeListener(onMessage))
   stack.defer(() => port.onDisconnect.removeListener(onDisconnect))
 
-  const onActivated = async ({ tabId }: chrome.tabs.OnActivatedInfo) => {
-    const tab = await chrome.tabs.get(tabId)
-
-    if (!tab.active)
-      return
-    if (tab.url == null)
-      return
-
-    port.postMessage(new RpcRequest(crypto.randomUUID(), "locationChanged", [tab.url]))
-  }
-
   const onUpdated = async (tabId: number) => {
     const tab = await chrome.tabs.get(tabId)
 
     if (!tab.active)
       return
-    if (tab.url == null)
+    if (!tab.url)
       return
 
     port.postMessage(new RpcRequest(crypto.randomUUID(), "locationChanged", [tab.url]))
   }
 
-  chrome.tabs.onActivated.addListener(onActivated)
   chrome.tabs.onUpdated.addListener(onUpdated)
 
-  stack.defer(() => chrome.tabs.onActivated.removeListener(onActivated))
   stack.defer(() => chrome.tabs.onUpdated.removeListener(onUpdated))
 
   return
