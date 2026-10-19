@@ -165,27 +165,29 @@ chrome.runtime.onConnect.addListener((port) => {
     return
 
   const route = async (request: RpcRequest) => {
-    if (request.method === "chrome_tab") {
+    if (request.method === "chrome_location") {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
 
       if (tab.url == null)
         return
 
-      const url = new URL(tab.url)
-
-      return url.origin
+      return tab.url
     }
 
-    if (request.method === "account_get") {
-      const [origin] = request.params as [string]
+    if (request.method === "account") {
+      const [location] = request.params as [string]
+
+      const { origin } = new URL(location)
 
       const account = accounts.get(origin)
 
       return account
     }
 
-    if (request.method === "account_connect") {
-      const [origin, account] = request.params as [string, Account]
+    if (request.method === "connect") {
+      const [location, account] = request.params as [string, Account]
+
+      const { origin } = new URL(location)
 
       accounts.set(origin, account)
       requests.get(origin)?.resolve(account)
@@ -202,8 +204,10 @@ chrome.runtime.onConnect.addListener((port) => {
       return true
     }
 
-    if (request.method === "account_disconnect") {
-      const [origin] = request.params as [string]
+    if (request.method === "disconnect") {
+      const [location] = request.params as [string]
+
+      const { origin } = new URL(location)
 
       accounts.delete(origin)
 
@@ -264,9 +268,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (tab.url == null)
       return
 
-    const url = new URL(tab.url)
-
-    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_tabChanged", [url.origin]))
+    port.postMessage(new RpcRequest(crypto.randomUUID(), "locationChanged", [tab.url]))
   }
 
   const onUpdated = async (tabId: number) => {
@@ -277,9 +279,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (tab.url == null)
       return
 
-    const url = new URL(tab.url)
-
-    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_tabChanged", [url.origin]))
+    port.postMessage(new RpcRequest(crypto.randomUUID(), "locationChanged", [tab.url]))
   }
 
   chrome.tabs.onActivated.addListener(onActivated)

@@ -18,7 +18,7 @@ interface Account {
   readonly color: Nullable<string>
 }
 
-export function App() {
+export function useBackground() {
   const port = useMemo(() => {
     return chrome.runtime.connect()
   }, [])
@@ -27,7 +27,20 @@ export function App() {
     port.disconnect()
   }, [])
 
-  const request = useCallback(async <T = unknown>(init: RpcRequestPreinit) => {
+  const channel = useMemo(() => {
+    return new Channel(port)
+  }, [port])
+
+  return channel
+}
+
+export class Channel {
+
+  constructor(
+    readonly port: chrome.runtime.Port
+  ) { }
+
+  async request<T>(init: RpcRequestPreinit) {
     const { method, params } = init
 
     const request = new RpcRequest(crypto.randomUUID(), method, params)
@@ -46,18 +59,21 @@ export function App() {
       resolve(response)
     }
 
-    port.onMessage.addListener(onMessage)
+    this.port.onMessage.addListener(onMessage)
 
-    port.postMessage(request)
+    this.port.postMessage(request)
 
     const response = await promise
 
-    port.onMessage.removeListener(onMessage)
+    this.port.onMessage.removeListener(onMessage)
 
     return response.getOrThrow() as T
-  }, [port])
+  }
 
-  const [origin, setOrigin] = useState<string>()
+}
+
+export function useLocation(channel: Channel) {
+  const [location, setLocation] = useState<string>()
 
   const onMessage = useCallback((message: RpcMessageInit) => {
     if ("method" in message === false)
@@ -65,10 +81,10 @@ export function App() {
 
     const request = RpcRequest.from(message)
 
-    if (request.method === "chrome_tabChanged") {
-      const [origin] = request.params as [string]
+    if (request.method === "locationChanged") {
+      const [location] = request.params as [string]
 
-      setOrigin(origin)
+      setLocation(location)
 
       return
     }
@@ -77,32 +93,44 @@ export function App() {
   }, [])
 
   useEffect(() => {
-    port.onMessage.addListener(onMessage)
-    return () => port.onMessage.removeListener(onMessage)
-  }, [port, onMessage])
+    channel.port.onMessage.addListener(onMessage)
+    return () => channel.port.onMessage.removeListener(onMessage)
+  }, [channel, onMessage])
 
   useEffect(() => {
-    request<string>({ method: "chrome_tab" }).then(setOrigin)
-  }, [request])
+    channel.request<string>({ method: "chrome_location" }).then(setLocation)
+  }, [channel])
+
+  return useMemo(() => {
+    try {
+      return new URL(location!)
+    } catch {
+      return undefined
+    }
+  }, [location])
+}
+
+export function App(props: { channel: Channel } & { location: URL }) {
+  const { channel, location } = props
 
   const [account, setAccount] = useState<Account>()
 
   useEffect(() => {
-    if (origin == null)
+    if (location == null)
       return
 
-    request<Account>({ method: "account_get", params: [origin] }).then(setAccount)
+    channel.request<Account>({ method: "account", params: [location] }).then(setAccount)
 
     return
-  }, [request, origin])
+  }, [channel, location])
 
   const onConnect = useCallback(async (account: Account) => {
-    await request({ method: "account_connect", params: [origin, account] }).then(() => setAccount(account))
-  }, [request, origin])
+    await channel.request({ method: "connect", params: [location, account] }).then(() => setAccount(account))
+  }, [channel, location])
 
   const onDisconnect = useCallback(async () => {
-    await request({ method: "account_disconnect", params: [origin] }).then(() => setAccount(undefined))
-  }, [request, origin])
+    await channel.request({ method: "disconnect", params: [location] }).then(() => setAccount(undefined))
+  }, [channel, location])
 
   const [accounts, setAccounts] = useState<Account[]>([])
 
@@ -113,12 +141,13 @@ export function App() {
     setAccounts([...accounts, { title, addrs, color }])
   }, [accounts])
 
-  if (origin == null)
+  if (location == null)
     return null
 
   return <div className="h-full w-full flex flex-col items-center p-8">
     {!account && <Fragment>
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center animate-opacity-in">
+        {location.origin}
       </div>
     </Fragment>}
     {account && <Fragment key={account.addrs.eth}>

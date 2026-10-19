@@ -8,7 +8,7 @@ import "@hazae41/request-idle-callback-polyfill";
 
 import { dirs, Lang } from "@/libs/lang/mod.ts";
 import { StoreProvider } from "@/libs/store/mod.tsx";
-import { App } from "@/mods/app/mod.tsx";
+import { App, useBackground, useLocation } from "@/mods/app/mod.tsx";
 import { PathProvider, useHashPath } from "@hazae41/chemin";
 import { Rewind } from "@hazae41/rewind";
 import React, { useEffect, useState } from "react";
@@ -18,6 +18,9 @@ React;
 
 function Body() {
   const path = useHashPath()
+
+  const channel = useBackground()
+  const location = useLocation(channel)
 
   const [client, setClient] = useState(false)
 
@@ -32,11 +35,13 @@ function Body() {
 
   if (!client)
     return null
+  if (!location)
+    return null
 
   return <PathProvider value={path}>
     <StoreProvider>
       <div className="h-full w-full overflow-y-auto animate-opacity-in text-base">
-        <App />
+        <App channel={channel} location={location} />
       </div>
     </StoreProvider>
   </PathProvider>

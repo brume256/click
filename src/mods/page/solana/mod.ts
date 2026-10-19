@@ -174,9 +174,9 @@ export namespace wallet {
 
   export const provider = new SolanaProvider()
 
-  window.solana = provider
+  // window.solana = provider
 
-  window.phantom = { solana: provider }
+  // window.phantom = { solana: provider }
 
   const dummy = {
     address: "4kPAZS6jyqkotTAJB9eiPcLwhj483oQhVeMEaR7hamJS",
@@ -236,6 +236,6 @@ export namespace wallet {
     event.detail.register(wallet)
   }, { passive: true })
 
-  announce()
+  // announce()
 
 }
