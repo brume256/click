@@ -70,7 +70,7 @@ export class SolanaPublicKey {
 
 export class SolanaProvider extends EventEmitter {
 
-  publicKey: Nullable<SolanaPublicKey>
+  publicKey: Nullable<SolanaPublicKey> = null
 
   constructor() {
     super()
@@ -150,17 +150,17 @@ export class SolanaProvider extends EventEmitter {
   }
 
   async signMessage(_message: Uint8Array, display?: "utf8" | "hex") {
+    const { publicKey } = this
+
     const message = base58.encode(_message)
     const pubkey = this.publicKey?.toString()
-
-    console.log("signMessage params:", _message, message)
 
     const params = { message, pubkey }
     const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
 
-    console.log("signMessage result:", result, base58.decode(result.signature))
+    const signature = base58.decode(result.signature)
 
-    return base58.decode(result.signature)
+    return { signature, publicKey }
   }
 
   async signTransaction(transaction: unknown) {
