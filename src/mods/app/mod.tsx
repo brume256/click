@@ -4,9 +4,9 @@ import { InOther } from "@/libs/anchor/mod.tsx";
 import { InButton, WideOppositeButton } from "@/libs/button/mod.tsx";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
-import { useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
-import { PathBoard } from "@hazae41/modal";
+import { PathBoard, PathPaper } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
 import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -239,6 +239,9 @@ export function ColorMenu(props: { ok(color: Nullable<string>): void }) {
 export function Display(props: {}) {
   const close = useCloseContext().getOrThrow()
 
+  const path = usePathContext().getOrThrow()
+  const hash = useHashSubpath(path)
+
   const [url, setUrl] = useState<string>()
 
   const [$title, setTitle] = useState("")
@@ -274,11 +277,24 @@ export function Display(props: {}) {
     return
   }, [])
 
+  useEffect(() => () => {
+    if (url == null)
+      return
+    else
+      URL.revokeObjectURL(url)
+  }, [url])
+
   const onClose = useCallback(() => {
     close()
   }, [close])
 
   return <div className="flex flex-col grow p-6 text-base">
+    <SubpathProvider value={hash}>
+      {hash.url.pathname === "/color" &&
+        <PathPaper>
+          <ColorMenu ok={setColor} />
+        </PathPaper>}
+    </SubpathProvider>
     <h1 className="text-xl font-medium">
       Add account
     </h1>
@@ -349,6 +365,9 @@ export function Display(props: {}) {
           placeholder={title}
           onChange={e => setTitle(e.target.value)}
           value={$title} />
+        <div className="flex items-center gap-2">
+          <ColorAnchor color={color} />
+        </div>
       </div>
       <div className="h-6" />
       <div className="font-medium">
@@ -425,10 +444,12 @@ export function App(props: { channel: Channel } & { location: URL }) {
     return null
 
   return <div className="h-full w-full flex flex-col items-center p-8">
-    {path.url.pathname === "/connect" &&
-      <PathBoard>
-        <Display />
-      </PathBoard>}
+    <SubpathProvider value={path}>
+      {path.url.pathname === "/connect" &&
+        <PathBoard>
+          <Display />
+        </PathBoard>}
+    </SubpathProvider>
     {!account && <Fragment>
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto animate-opacity-in">
         {location.origin}
