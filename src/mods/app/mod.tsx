@@ -443,29 +443,22 @@ export function App(props: { channel: Channel } & { location: URL }) {
   const [account, setAccount] = useState<Account>()
 
   useEffect(() => {
-    channel.request<Account>({ method: "account", params: [location] }).then(setAccount)
+    channel.request<Account>({ method: "wc_account", params: [location] }).then(setAccount)
   }, [channel, location])
 
   const onConnect = useCallback(async (account: Account) => {
-    await channel.request({ method: "connect", params: [location, account] }).then(() => setAccount(account))
+    await channel.request({ method: "wc_connect", params: [location, account] }).then(() => setAccount(account))
   }, [channel, location])
 
   const onDisconnect = useCallback(async () => {
-    await channel.request({ method: "disconnect", params: [location] }).then(() => setAccount(undefined))
+    await channel.request({ method: "wc_disconnect", params: [location] }).then(() => setAccount(undefined))
   }, [channel, location])
 
   const [accounts, setAccounts] = useState<Account[]>([])
 
   useEffect(() => {
-    channel.request<Account[]>({ method: "accounts", params: [location] }).then(setAccounts)
+    channel.request<Account[]>({ method: "wc_accounts", params: [location] }).then(setAccounts)
   }, [channel, location])
-
-  // const onPlusClick = useCallback(async () => {
-  //   const title = `Account #${accounts.length + 1}`
-  //   const addrs = { eth: `0x${crypto.getRandomValues(new Uint8Array(20)).toHex()}`, sol: base58.encode(crypto.getRandomValues(new Uint8Array(32))) }
-  //   const color = ["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][accounts.length % 16]
-  //   await channel.request<Account[]>({ method: "create", params: [{ title, addrs, color }] }).then(setAccounts)
-  // }, [])
 
   if (location == null)
     return null

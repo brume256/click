@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace require-await no-window no-explicit-any no-unused-vars
+// deno-lint-ignore-file no-namespace require-await no-explicit-any no-unused-vars
 
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";

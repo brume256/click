@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
-// deno-lint-ignore-file no-empty-pattern
 
+import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
 import { IrnClient, WalletConnect, WcPairing, WcSession, WcSessionSettleParams } from "@hazae41/latrine";
@@ -14,6 +14,7 @@ interface Account {
   readonly title: string
   readonly addrs: Addresses
   readonly color: Nullable<string>
+  readonly wconn: { jwk: string, tpc: string, key: string }
 }
 
 const accounts = new Map<string, Account>()
@@ -200,28 +201,27 @@ chrome.runtime.onConnect.addListener((port) => {
       stack.defer(() => cleaner.abort())
 
       const self = {
-        name: "Brume Click",
-        description: "The browser extension for one-click wallet login",
-        url: "https://click.brume.tech",
-        icons: []
+        name: chrome.runtime.getManifest().name,
+        description: chrome.runtime.getManifest().description!,
+        url: chrome.runtime.getURL("/"),
+        icons: [icon]
       }
 
       const requiredNamespaces = {
         eip155: {
           chains: ["eip155:1"],
-          methods: ["personal_sign"],
-          events: []
+          methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData_v4"],
+          events: ["accountsChanged", "chainChanged"]
         },
         solana: {
           chains: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
-          methods: ["solana_signMessage"],
+          methods: ["solana_signTransaction", "solana_signMessage"],
           events: []
         }
       }
 
-      const jwk = crypto.getRandomValues(new Uint8Array(32))
-
-      const client = await IrnClient.open(WalletConnect.RELAY, jwk, "c6c9bacd35afa3eb9e6cccf6d8464395")
+      const sticky = crypto.getRandomValues(new Uint8Array(32))
+      const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
 
       stack.defer(() => success ? undefined : client.close())
 
@@ -264,11 +264,28 @@ chrome.runtime.onConnect.addListener((port) => {
       stack.defer(async () => success ? undefined : await session.close())
       stack.defer(async () => success ? undefined : await session.delete())
 
-      const stl = await settled.promise
+      const { namespaces } = await settled.promise
 
       success = true
 
-      // return { wcs: session, jwk, stl }
+      await session.close()
+
+      const jwk = sticky.toBase64()
+      const tpc = session.channel.topic
+      const key = session.channel.key.toBase64()
+
+      const wconn = { jwk, tpc, key }
+
+      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
+
+      const { eip155, solana } = namespaces as { eip155: { accounts: string[] }, solana: { accounts: string[] } }
+
+      const eth = eip155.accounts[0].split(":")[2]
+      const sol = solana.accounts[0].split(":")[2]
+
+      accounts.push({ title: "Main", addrs: { eth, sol }, color: "blue", wconn })
+
+      await chrome.storage.session.set({ accounts })
 
       return
     }
@@ -281,7 +298,15 @@ chrome.runtime.onConnect.addListener((port) => {
       return
     }
 
-    if (request.method === "account") {
+    if (request.method === "wc_accounts") {
+      const _ = request.params
+
+      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
+
+      return accounts
+    }
+
+    if (request.method === "wc_account") {
       const [location] = request.params as [string]
 
       const { origin } = new URL(location)
@@ -291,7 +316,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return account
     }
 
-    if (request.method === "connect") {
+    if (request.method === "wc_connect") {
       const [location, account] = request.params as [string, Account]
 
       const { origin } = new URL(location)
@@ -311,7 +336,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return true
     }
 
-    if (request.method === "disconnect") {
+    if (request.method === "wc_disconnect") {
       const [location] = request.params as [string]
 
       const { origin } = new URL(location)
@@ -328,26 +353,6 @@ chrome.runtime.onConnect.addListener((port) => {
       }
 
       return true
-    }
-
-    if (request.method === "accounts") {
-      const _ = request.params
-
-      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
-
-      return accounts
-    }
-
-    if (request.method === "create") {
-      const [account] = request.params as [Account]
-
-      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
-
-      accounts.push(account)
-
-      await chrome.storage.session.set({ accounts })
-
-      return accounts
     }
 
     throw new RpcMethodNotFoundError()
