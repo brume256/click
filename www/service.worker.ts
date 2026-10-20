@@ -124,23 +124,23 @@ chrome.runtime.onConnect.addListener((port) => {
     try {
       const request = RpcRequest.from(init)
 
-      console.log("->", request)
+      console.debug("->", request)
 
       const response = new RpcOk(request.id, await route(request))
 
-      console.log("<-", response)
+      console.debug("<-", response)
 
       port.postMessage(response)
 
       return
     } catch (error: unknown) {
-      console.error(error)
+      console.debug(error)
 
       const request = RpcRequest.from(init)
 
       const response = new RpcErr(request.id, RpcError.rewrap(error))
 
-      console.error("<-", response)
+      console.debug("<-", response)
 
       port.postMessage(response)
 
@@ -223,7 +223,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const client = await IrnClient.open(WalletConnect.RELAY, jwk, "c6c9bacd35afa3eb9e6cccf6d8464395")
 
-      stack.defer(() => console.log("Deferred log executed"))
       stack.defer(() => success ? undefined : client.close())
 
       const pairing = await WcPairing.generate(client)
@@ -358,23 +357,23 @@ chrome.runtime.onConnect.addListener((port) => {
     try {
       const request = RpcRequest.from(init)
 
-      console.log("->", request)
+      console.debug("->", request)
 
       const response = new RpcOk(request.id, await route(request))
 
-      console.log("<-", response)
+      console.debug("<-", response)
 
       port.postMessage(response)
 
       return
     } catch (error: unknown) {
-      console.error(error)
+      console.debug(error)
 
       const request = RpcRequest.from(init)
 
       const response = new RpcErr(request.id, RpcError.rewrap(error))
 
-      console.error("<-", response)
+      console.debug("<-", response)
 
       port.postMessage(response)
 

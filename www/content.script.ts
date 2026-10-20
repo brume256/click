@@ -145,7 +145,7 @@ namespace frontend {
 
       return
     } catch (error: unknown) {
-      console.error(error)
+      console.debug(error)
 
       const { formData } = event
 
@@ -162,23 +162,23 @@ namespace frontend {
     try {
       const request = RpcRequest.from(event.detail)
 
-      console.log("->", request)
+      console.debug("->", request)
 
       const response = new RpcOk(request.id, await route(request))
 
-      console.log("<-", response)
+      console.debug("<-", response)
 
       dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 
       return
     } catch (error: unknown) {
-      console.error(error)
+      console.debug(error)
 
       const request = RpcRequest.from(event.detail)
 
       const response = new RpcErr(request.id, RpcError.rewrap(error))
 
-      console.error("<-", response)
+      console.debug("<-", response)
 
       dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 
