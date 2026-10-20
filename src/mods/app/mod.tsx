@@ -1,12 +1,15 @@
 /// <reference types="chrome" />
 
+import { InOther } from "@/libs/anchor/mod.tsx";
+import { InButton, WideOppositeButton } from "@/libs/button/mod.tsx";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
-import { useAnchorWithCoords, usePathContext } from "@hazae41/chemin";
+import { useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
 import { PathBoard } from "@hazae41/modal";
+import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
-import React, { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 
 React;
 
@@ -121,8 +124,128 @@ export function useLocation(channel: Channel) {
   }, [location])
 }
 
+export function ColorAnchor(props: { color?: Nullable<string> }) {
+  const { color } = props
+
+  const path = usePathContext().getOrThrow()
+  const hash = useHashSubpath(path)
+
+  const coords = useAnchorWithCoords(hash, "/color")
+
+  return <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+    href={coords.url.hash}
+    onClick={coords.onClick}
+    onKeyDown={coords.onKeyDown}>
+    <InOther>
+      <div className="size-5 rounded-full bg-opposite
+        data-[color=red]:bg-red-400 
+        data-[color=orange]:bg-orange-400 
+        data-[color=amber]:bg-amber-400 
+        data-[color=yellow]:bg-yellow-400 
+        data-[color=lime]:bg-lime-400 
+        data-[color=green]:bg-green-400 
+        data-[color=emerald]:bg-emerald-400 
+        data-[color=teal]:bg-teal-400 
+        data-[color=cyan]:bg-cyan-400 
+        data-[color=sky]:bg-sky-400 
+        data-[color=blue]:bg-blue-400 
+        data-[color=indigo]:bg-indigo-400 
+        data-[color=violet]:bg-violet-400 
+        data-[color=purple]:bg-purple-400 
+        data-[color=fuchsia]:bg-fuchsia-400 
+        data-[color=pink]:bg-pink-400 
+        data-[color=rose]:bg-rose-400 
+        in-dark:data-[color=red]:bg-red-500
+        in-dark:data-[color=orange]:bg-orange-500
+        in-dark:data-[color=amber]:bg-amber-500
+        in-dark:data-[color=yellow]:bg-yellow-500
+        in-dark:data-[color=lime]:bg-lime-500
+        in-dark:data-[color=green]:bg-green-500
+        in-dark:data-[color=emerald]:bg-emerald-500
+        in-dark:data-[color=teal]:bg-teal-500
+        in-dark:data-[color=cyan]:bg-cyan-500
+        in-dark:data-[color=sky]:bg-sky-500
+        in-dark:data-[color=blue]:bg-blue-500
+        in-dark:data-[color=indigo]:bg-indigo-500
+        in-dark:data-[color=violet]:bg-violet-500
+        in-dark:data-[color=purple]:bg-purple-500
+        in-dark:data-[color=fuchsia]:bg-fuchsia-500
+        in-dark:data-[color=pink]:bg-pink-500
+        in-dark:data-[color=rose]:bg-rose-500"
+        data-color={color} />
+    </InOther>
+  </a>
+}
+
+export function ColorMenu(props: { ok(color: Nullable<string>): void }) {
+  const { ok } = props
+
+  return <div className="grid grid-cols-6 grid-auto-rows gap-2">
+    <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+      onClick={() => ok(null)}
+      type="button">
+      <InButton>
+        <div className="size-5 rounded-full bg-opposite" />
+      </InButton>
+    </button>
+    {["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"].map(color =>
+      <Fragment key={color}>
+        <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+          onClick={() => ok(color)}
+          type="button">
+          <InButton>
+            <div className="size-5 rounded-full
+              data-[color=red]:bg-red-400 
+              data-[color=orange]:bg-orange-400 
+              data-[color=amber]:bg-amber-400 
+              data-[color=yellow]:bg-yellow-400 
+              data-[color=lime]:bg-lime-400 
+              data-[color=green]:bg-green-400 
+              data-[color=emerald]:bg-emerald-400 
+              data-[color=teal]:bg-teal-400 
+              data-[color=cyan]:bg-cyan-400 
+              data-[color=sky]:bg-sky-400 
+              data-[color=blue]:bg-blue-400 
+              data-[color=indigo]:bg-indigo-400 
+              data-[color=violet]:bg-violet-400 
+              data-[color=purple]:bg-purple-400 
+              data-[color=fuchsia]:bg-fuchsia-400 
+              data-[color=pink]:bg-pink-400 
+              data-[color=rose]:bg-rose-400 
+              in-dark:data-[color=red]:bg-red-500
+              in-dark:data-[color=orange]:bg-orange-500
+              in-dark:data-[color=amber]:bg-amber-500
+              in-dark:data-[color=yellow]:bg-yellow-500
+              in-dark:data-[color=lime]:bg-lime-500
+              in-dark:data-[color=green]:bg-green-500
+              in-dark:data-[color=emerald]:bg-emerald-500
+              in-dark:data-[color=teal]:bg-teal-500
+              in-dark:data-[color=cyan]:bg-cyan-500
+              in-dark:data-[color=sky]:bg-sky-500
+              in-dark:data-[color=blue]:bg-blue-500
+              in-dark:data-[color=indigo]:bg-indigo-500
+              in-dark:data-[color=violet]:bg-violet-500
+              in-dark:data-[color=purple]:bg-purple-500
+              in-dark:data-[color=fuchsia]:bg-fuchsia-500
+              in-dark:data-[color=pink]:bg-pink-500
+              in-dark:data-[color=rose]:bg-rose-500"
+              data-color={color} />
+          </InButton>
+        </button>
+      </Fragment>)}
+  </div>
+}
+
 export function Display(props: {}) {
+  const close = useCloseContext().getOrThrow()
+
   const [url, setUrl] = useState<string>()
+
+  const [$title, setTitle] = useState("")
+
+  const title = useDeferredValue($title || "Main")
+
+  const [color, setColor] = useState<Nullable<string>>(["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][Math.floor(Math.random() * 16)])
 
   useEffect(() => {
     const source = new TextEncoder().encode("wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae")
@@ -151,15 +274,17 @@ export function Display(props: {}) {
     return
   }, [])
 
-  const color = "blue"
+  const onClose = useCallback(() => {
+    close()
+  }, [close])
 
-  return <div className="grow flex flex-col p-6 text-base">
+  return <div className="flex flex-col grow p-6 text-base">
     <h1 className="text-xl font-medium">
       Add account
     </h1>
-    <div className="h-6 shrink-0" />
+    <div className="h-6" />
     <div className="flex items-center justify-center">
-      <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 transition-transform
+      <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start
       data-[color=red]:bg-red-400 
       data-[color=orange]:bg-orange-400 
       data-[color=amber]:bg-amber-400 
@@ -197,7 +322,7 @@ export function Display(props: {}) {
         data-theme={color == null ? "opposite" : "dark"}
         data-color={color}>
         <div className="font-medium text-lg">
-          Main
+          {title}
         </div>
         <div className="grow" />
         <div className="bg-default-contrast rounded-xl po-1 flex items-center gap-2">
@@ -206,37 +331,55 @@ export function Display(props: {}) {
         </div>
       </button>
     </div>
-    <div className="h-6 shrink-0" />
-    <div className="font-medium">
-      Name
-    </div>
-    <div className="text-default-contrast">
-      Name of this account. Not shared anywhere.
-    </div>
-    <div className="h-4 shrink-0" />
-    <input className="p-4 bg-default-contrast rounded-xl"
-      placeholder="Main" />
-    <div className="h-6 shrink-0" />
-    <div className="font-medium">
-      WalletConnect code
-    </div>
-    <div className="text-default-contrast">
-      Your WalletConnect pairing code.
-    </div>
-    <div className="h-4 shrink-0" />
-    <div className="p-4 bg-default-contrast rounded-xl flex items-center gap-2 truncate">
-      <input className="w-full focus-visible:outline-none" value="wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae" />
-      <a className=""
-        href={url}
-        target="_blank"
-        rel="noreferrer">
-        <Outline.QrCodeIcon className="size-5" />
-      </a>
-    </div>
-    <div className="h-6 shrink-0 grow" />
-    <button className="bg-opposite text-opposite po-2 rounded-xl">
-      Cancel
-    </button>
+    <form className="grow flex flex-col">
+      <input className="hidden" name="username" />
+      <div className="h-6" />
+      <div className="font-medium">
+        Title
+      </div>
+      <div className="text-default-contrast">
+        Name this account. Not shared anywhere.
+      </div>
+      <div className="h-4" />
+      <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
+        <input className="w-full focus-visible:outline-none"
+          placeholder={title}
+          onChange={e => setTitle(e.target.value)}
+          value={$title} />
+      </div>
+      <div className="h-6" />
+      <div className="font-medium">
+        WalletConnect code
+      </div>
+      <div className="text-default-contrast">
+        Your WalletConnect pairing code. Use it to connect your wallet.
+      </div>
+      <div className="h-4" />
+      <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
+        <input className="w-full focus-visible:outline-none"
+          readOnly
+          onFocus={e => e.currentTarget.select()}
+          value="wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae" />
+        <div className="flex items-center gap-2">
+          <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+            href={url}
+            target="_blank"
+            rel="noreferrer">
+            <InOther>
+              <Outline.QrCodeIcon className="size-5" />
+            </InOther>
+          </a>
+        </div>
+      </div>
+      <div className="h-8 grow" />
+      <div className="flex items-center flex-wrap-reverse gap-2">
+        <WideOppositeButton
+          onClick={onClose}
+          type="button">
+          Cancel
+        </WideOppositeButton>
+      </div>
+    </form>
   </div>
 }
 
