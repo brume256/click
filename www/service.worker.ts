@@ -2,8 +2,8 @@
 
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
-import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
-import { IrnClient, WalletConnect, WcPairing, WcSession, WcSessionSettleParams } from "@hazae41/latrine";
+import { RpcErr, RpcError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
+import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams, WcUserRejectedRequestError } from "@hazae41/latrine";
 
 interface Addresses {
   readonly eth: string
@@ -17,8 +17,13 @@ interface Account {
   readonly wconn: { jwk: string, tpc: string, key: string }
 }
 
-const accounts = new Map<string, Account>()
-const requests = new Map<string, PromiseWithResolvers<Account>>()
+interface Session {
+  readonly account: Account
+  readonly session: WcSession
+}
+
+const sessions = new Map<string, Session>()
+const requests = new Map<string, PromiseWithResolvers<Session>>()
 
 const aborters = new Map<chrome.runtime.Port, AbortController>()
 const channels = new Map<chrome.runtime.Port, string>()
@@ -50,23 +55,28 @@ chrome.runtime.onConnect.addListener((port) => {
     return
 
   const route = async (request: RpcRequest) => {
+    const { method, params } = request
+
     if (request.method === "ping")
       return
 
-    if (request.method === "eth_accounts") {
-      const account = accounts.get(origin)
+    if (request.method === "eth_chainId")
+      return "0x1"
 
-      if (account != null)
-        return [account.addrs.eth]
+    if (request.method === "eth_accounts") {
+      const session = sessions.get(origin)
+
+      if (session != null)
+        return [session.account.addrs.eth]
 
       return []
     }
 
     if (request.method === "eth_requestAccounts") {
-      const account = accounts.get(origin)
+      const session = sessions.get(origin)
 
-      if (account != null)
-        return [account.addrs.eth]
+      if (session != null)
+        return [session.account.addrs.eth]
 
       const previous = requests.get(origin)
 
@@ -75,7 +85,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const current = Promise.withResolvers<Account>()
+      const current = Promise.withResolvers<Session>()
 
       requests.set(origin, current)
       stack.defer(() => requests.delete(origin))
@@ -85,16 +95,31 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await chrome.sidePanel.open({ windowId })
 
-      const account2 = await current.promise
+      const session2 = await current.promise
 
-      return [account2.addrs.eth]
+      return [session2.account.addrs.eth]
     }
 
-    if (request.method === "connect") {
-      const account = accounts.get(origin)
+    if (request.method === "personal_sign") {
+      const session = sessions.get(origin)
 
-      if (account != null)
-        return [account.addrs.sol]
+      if (session == null)
+        throw new RpcInvalidRequestError()
+
+      const request = { method, params }
+
+      return await session.session.request({ chainId: "eip155:1", request })
+    }
+
+    if (request.method === "solana_connect") {
+      const { onlyIfTrusted } = params as { onlyIfTrusted?: boolean }
+
+      const session = sessions.get(origin)
+
+      if (session != null)
+        return [session.account.addrs.sol]
+      if (onlyIfTrusted)
+        throw new WcUserRejectedRequestError()
 
       const previous = requests.get(origin)
 
@@ -103,7 +128,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const current = Promise.withResolvers<Account>()
+      const current = Promise.withResolvers<Session>()
 
       requests.set(origin, current)
       stack.defer(() => requests.delete(origin))
@@ -113,9 +138,20 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await chrome.sidePanel.open({ windowId })
 
-      const account2 = await current.promise
+      const session2 = await current.promise
 
-      return [account2.addrs.sol]
+      return [session2.account.addrs.sol]
+    }
+
+    if (request.method === "solana_signMessage") {
+      const session = sessions.get(origin)
+
+      if (session == null)
+        throw new RpcInvalidRequestError()
+
+      const request = { method, params }
+
+      return await session.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
     }
 
     throw new RpcMethodNotFoundError()
@@ -125,11 +161,13 @@ chrome.runtime.onConnect.addListener((port) => {
     try {
       const request = RpcRequest.from(init)
 
-      console.debug("->", request)
+      if (request.method !== "ping")
+        console.debug("->", request)
 
       const response = new RpcOk(request.id, await route(request))
 
-      console.debug("<-", response)
+      if (request.method !== "ping")
+        console.debug("<-", response)
 
       port.postMessage(response)
 
@@ -210,12 +248,12 @@ chrome.runtime.onConnect.addListener((port) => {
       const requiredNamespaces = {
         eip155: {
           chains: ["eip155:1"],
-          methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData_v4"],
+          methods: ["personal_sign", "eth_sendTransaction", "eth_signTypedData_v4"],
           events: ["accountsChanged", "chainChanged"]
         },
         solana: {
           chains: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
-          methods: ["solana_signTransaction", "solana_signMessage"],
+          methods: ["solana_signMessage", "solana_signTransaction"],
           events: []
         }
       }
@@ -227,7 +265,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const pairing = await WcPairing.generate(client)
 
-      port.postMessage(new RpcRequest(crypto.randomUUID(), "pairingChanged", [pairing.url]))
+      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_pairingChanged", [pairing.url]))
 
       const upgraded = Promise.withResolvers<WcSession>()
       stack.defer(() => upgraded.reject())
@@ -245,11 +283,6 @@ chrome.runtime.onConnect.addListener((port) => {
       await pairing.propose({ self, requiredNamespaces }, signal)
 
       const session = await upgraded.promise
-
-      const onevent = (data: any) => console.log("Session event:", data)
-
-      session.addEventListener("event", event => onevent(event.data), { signal: session.closing })
-      session.addEventListener("close", () => console.log("Session closed"), { signal: session.closing })
 
       const settled = Promise.withResolvers<WcSessionSettleParams>()
       stack.defer(() => settled.reject())
@@ -287,6 +320,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await chrome.storage.session.set({ accounts })
 
+      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountsChanged", accounts))
+
       return
     }
 
@@ -311,9 +346,12 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      const account = accounts.get(origin)
+      const session = sessions.get(origin)
 
-      return account
+      if (session == null)
+        return
+
+      return session.account
     }
 
     if (request.method === "wc_connect") {
@@ -321,8 +359,33 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      accounts.set(origin, account)
-      requests.get(origin)?.resolve(account)
+      const { jwk, tpc, key } = account.wconn
+
+      const sticky = Uint8Array.fromBase64(jwk)
+      const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
+
+      const channel = new WcChannel(client, tpc, Uint8Array.fromBase64(key))
+      const session = new WcSession(channel)
+
+      const onEvent = (data: WcSessionEventParams) => {
+        console.log("Session event:", data)
+
+        return
+      }
+
+      const onRequest = (data: WcSessionRequestParams<unknown>) => {
+        console.log("Session request:", data)
+
+        throw new WcInvalidMethodError()
+      }
+
+      session.addEventListener("event", event => onEvent(event.data), { signal: session.closing })
+      session.addEventListener("request", event => event.respondWith(onRequest(event.data)), { signal: session.closing })
+      session.addEventListener("close", () => console.log("Session closed"), { signal: session.closing })
+
+      await session.open()
+
+      sessions.set(origin, { account, session })
 
       for (const channel of channels) {
         const [port, origin2] = channel
@@ -330,8 +393,13 @@ chrome.runtime.onConnect.addListener((port) => {
         if (origin2 !== origin)
           continue
 
+        port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_connect", [account.addrs.sol]))
         port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account.addrs.eth]))
       }
+
+      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", [account]))
+
+      requests.get(origin)?.resolve({ account, session })
 
       return true
     }
@@ -341,7 +409,14 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      accounts.delete(origin)
+      const session = sessions.get(origin)
+
+      if (session == null)
+        return false
+
+      await session.session.close()
+
+      sessions.delete(origin)
 
       for (const channel of channels) {
         const [port, origin2] = channel
@@ -349,8 +424,11 @@ chrome.runtime.onConnect.addListener((port) => {
         if (origin2 !== origin)
           continue
 
+        port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_disconnect", undefined))
         port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", []))
       }
+
+      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", []))
 
       return true
     }
@@ -362,11 +440,13 @@ chrome.runtime.onConnect.addListener((port) => {
     try {
       const request = RpcRequest.from(init)
 
-      console.debug("->", request)
+      if (request.method !== "ping")
+        console.debug("->", request)
 
       const response = new RpcOk(request.id, await route(request))
 
-      console.debug("<-", response)
+      if (request.method !== "ping")
+        console.debug("<-", response)
 
       port.postMessage(response)
 
@@ -402,7 +482,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (!tab.url)
       return
 
-    port.postMessage(new RpcRequest(crypto.randomUUID(), "locationChanged", [tab.url]))
+    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_locationChanged", [tab.url]))
   }
 
   const onUpdated = async (tabId: number) => {
@@ -413,7 +493,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (!tab.url)
       return
 
-    port.postMessage(new RpcRequest(crypto.randomUUID(), "locationChanged", [tab.url]))
+    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_locationChanged", [tab.url]))
   }
 
   chrome.tabs.onActivated.addListener(onActivated)

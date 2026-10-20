@@ -96,7 +96,7 @@ export function useLocation(channel: Channel) {
 
     const request = RpcRequest.from(message)
 
-    if (request.method === "locationChanged") {
+    if (request.method === "chrome_locationChanged") {
       const [location] = request.params as [string]
 
       setLocation(location)
@@ -265,7 +265,7 @@ export function Connect(props: { channel: Channel }) {
 
     const request = RpcRequest.from(message)
 
-    if (request.method === "pairingChanged") {
+    if (request.method === "wc_pairingChanged") {
       const [code] = request.params as [string]
 
       setCode(code)
@@ -442,16 +442,46 @@ export function App(props: { channel: Channel } & { location: URL }) {
 
   const [account, setAccount] = useState<Account>()
 
+  const onMessage = useCallback((message: RpcMessageInit) => {
+    if ("method" in message === false)
+      return
+
+    const request = RpcRequest.from(message)
+
+    if (request.method === "wc_accountChanged") {
+      const [account] = request.params as [Account]
+
+      setAccount(account)
+
+      return
+    }
+
+    if (request.method === "wc_accountsChanged") {
+      const accounts = request.params as Account[]
+
+      setAccounts(accounts)
+
+      return
+    }
+
+    return
+  }, [])
+
+  useEffect(() => {
+    channel.port.onMessage.addListener(onMessage)
+    return () => channel.port.onMessage.removeListener(onMessage)
+  }, [channel, onMessage])
+
   useEffect(() => {
     channel.request<Account>({ method: "wc_account", params: [location] }).then(setAccount)
   }, [channel, location])
 
   const onConnect = useCallback(async (account: Account) => {
-    await channel.request({ method: "wc_connect", params: [location, account] }).then(() => setAccount(account))
+    await channel.request({ method: "wc_connect", params: [location, account] })
   }, [channel, location])
 
   const onDisconnect = useCallback(async () => {
-    await channel.request({ method: "wc_disconnect", params: [location] }).then(() => setAccount(undefined))
+    await channel.request({ method: "wc_disconnect", params: [location] })
   }, [channel, location])
 
   const [accounts, setAccounts] = useState<Account[]>([])

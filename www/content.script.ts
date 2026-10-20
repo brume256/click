@@ -68,10 +68,7 @@ namespace backend {
 
     const request = RpcRequest.from(message)
 
-    if (request.method === "eth_accountsChanged")
-      return frontend.message(request)
-    if (request.method === "eth_chainChanged")
-      return frontend.message(request)
+    frontend.message(request)
 
     return
   })
@@ -103,32 +100,11 @@ namespace frontend {
     if (request.method === "chrome_version")
       return chrome.runtime.getManifest().version
 
-    if (request.method === "chrome_url") {
-      const [path] = request.params as [string]
-
-      const url = chrome.runtime.getURL(path)
-
-      return url
-    }
-
     throw new RpcMethodNotFoundError()
   }
 
   export async function route(request: RpcRequest) {
-    if (request.method === "eth_chainId")
-      return "0x1"
-    if (request.method === "eth_accounts")
-      return await backend.request(request)
-    if (request.method === "eth_requestAccounts")
-      return await backend.request(request)
-
-    if (request.method === "wallet_requestPermissions")
-      return { parentCapability: "eth_accounts", caveats: [] }
-
-    if (request.method === "connect")
-      return await backend.request(request)
-
-    throw new RpcMethodNotFoundError()
+    return await backend.request(request)
   }
 
   addEventListener("pipe:requestSync", (event) => {

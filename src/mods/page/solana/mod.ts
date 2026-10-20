@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-namespace require-await no-explicit-any no-unused-vars
+// deno-lint-ignore-file no-namespace require-await no-explicit-any no-unused-vars no-window
 
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
@@ -70,13 +70,33 @@ export class SolanaPublicKey {
 
 export class SolanaProvider extends EventEmitter {
 
-  #current: Nullable<SolanaPublicKey>
+  publicKey: Nullable<SolanaPublicKey>
 
   constructor() {
     super()
 
     addEventListener("pipe:message", (event) => {
       const { detail: request } = event
+
+      if (request.method === "solana_connect") {
+        const [address] = request.params as string[]
+
+        const publicKey = new SolanaPublicKey(address)
+
+        this.publicKey = publicKey
+
+        this.emit("connect", publicKey)
+
+        return
+      }
+
+      if (request.method === "solana_disconnect") {
+        this.publicKey = null
+
+        this.emit("disconnect")
+
+        return
+      }
 
       return
     }, { passive: true })
@@ -89,45 +109,58 @@ export class SolanaProvider extends EventEmitter {
   }
 
   get isConnected() {
-    return this.#current != null
-  }
-
-  get publicKey() {
-    return this.#current
+    return this.publicKey != null
   }
 
   async request(init: RpcRequestPreinit<any>) {
-    if (init.method === "connect")
-      return await this.connect(init.params)
-    if (init.method === "disconnect")
+    const { method, params } = init
+
+    if (method === "connect")
+      return await this.connect(params)
+    if (method === "disconnect")
       return await this.disconnect()
-    // if (init.method === "signMessage")
-    //   return await this.signMessage()
-    // if (init.method === "signTransaction")
-    //   return await this.signTransaction()
+
+    if (method === "signMessage") {
+      const { message, display } = params
+
+      const signature = await this.signMessage(message, display)
+
+      return signature
+    }
+
     throw new RpcMethodNotFoundError()
   }
 
   async connect(params: { onlyIfTrusted?: boolean } = {}): Promise<{ publicKey: SolanaPublicKey }> {
-    const publicKey = new SolanaPublicKey(await pipe.request<string>({ method: "connect", params }))
+    const [address] = await pipe.request<string[]>({ method: "solana_connect", params })
 
-    this.#current = publicKey
+    const publicKey = new SolanaPublicKey(address)
 
-    this.emit("connect", publicKey)
+    this.publicKey = publicKey
 
     return { publicKey }
   }
 
   async disconnect() {
-    this.#current = null
+    this.publicKey = null
 
     this.emit("disconnect")
 
     return
   }
 
-  async signMessage(message: Uint8Array, display?: "utf8" | "hex") {
-    throw new Error("Not implemented")
+  async signMessage(_message: Uint8Array, display?: "utf8" | "hex") {
+    const message = base58.encode(_message)
+    const pubkey = this.publicKey?.toString()
+
+    console.log("signMessage params:", _message, message)
+
+    const params = { message, pubkey }
+    const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
+
+    console.log("signMessage result:", result, base58.decode(result.signature))
+
+    return base58.decode(result.signature)
   }
 
   async signTransaction(transaction: unknown) {
@@ -172,11 +205,16 @@ declare global {
 
 export namespace wallet {
 
-  export const provider = new SolanaProvider()
+  export const provider = new Proxy(new SolanaProvider(), {
+    get(target, prop) {
+      console.log("Accessing property:", prop)
+      return Reflect.get(target, prop)
+    }
+  })
 
-  // window.solana = provider
+  window.solana = provider
 
-  // window.phantom = { solana: provider }
+  window.phantom = { solana: provider }
 
   const dummy = {
     address: "4kPAZS6jyqkotTAJB9eiPcLwhj483oQhVeMEaR7hamJS",
@@ -232,9 +270,9 @@ export namespace wallet {
     dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
   }
 
-  addEventListener("wallet-standard:app-ready", (event) => {
-    event.detail.register(wallet)
-  }, { passive: true })
+  // addEventListener("wallet-standard:app-ready", (event) => {
+  //   event.detail.register(wallet)
+  // }, { passive: true })
 
   // announce()
 
