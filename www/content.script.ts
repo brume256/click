@@ -145,6 +145,8 @@ namespace frontend {
 
       return
     } catch (error: unknown) {
+      console.error(error)
+
       const { formData } = event
 
       const rpcresponse = new RpcErr(null, RpcError.rewrap(error))
@@ -170,11 +172,13 @@ namespace frontend {
 
       return
     } catch (error: unknown) {
+      console.error(error)
+
       const request = RpcRequest.from(event.detail)
 
       const response = new RpcErr(request.id, RpcError.rewrap(error))
 
-      console.log("<-", response)
+      console.error("<-", response)
 
       dispatchEvent(new CustomEvent("pipe:respond", { detail: response }))
 

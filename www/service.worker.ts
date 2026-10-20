@@ -3,6 +3,7 @@
 
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
+import { IrnClient, WalletConnect, WcPairing, WcSession, WcSessionSettleParams } from "@hazae41/latrine";
 
 interface Addresses {
   readonly eth: string
@@ -18,6 +19,7 @@ interface Account {
 const accounts = new Map<string, Account>()
 const requests = new Map<string, PromiseWithResolvers<Account>>()
 
+const aborters = new Map<chrome.runtime.Port, AbortController>()
 const channels = new Map<chrome.runtime.Port, string>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
@@ -131,12 +133,14 @@ chrome.runtime.onConnect.addListener((port) => {
       port.postMessage(response)
 
       return
-    } catch (e: unknown) {
+    } catch (error: unknown) {
+      console.error(error)
+
       const request = RpcRequest.from(init)
 
-      const response = new RpcErr(request.id, RpcError.rewrap(e))
+      const response = new RpcErr(request.id, RpcError.rewrap(error))
 
-      console.log("<-", response)
+      console.error("<-", response)
 
       port.postMessage(response)
 
@@ -179,6 +183,100 @@ chrome.runtime.onConnect.addListener((port) => {
         return
 
       return tab.url
+    }
+
+    if (request.method === "wc_propose") {
+      const _ = request.params
+
+      const aborter = new AbortController()
+      aborters.set(port, aborter)
+      const { signal } = aborter
+
+      await using stack = new AsyncDisposableStack()
+
+      const cleaner = new AbortController()
+      stack.defer(() => cleaner.abort())
+
+      const self = {
+        name: "Brume Click",
+        description: "The browser extension for one-click wallet login",
+        url: "https://click.brume.tech",
+        icons: []
+      }
+
+      const requiredNamespaces = {
+        eip155: {
+          chains: ["eip155:1"],
+          methods: ["personal_sign"],
+          events: []
+        },
+        solana: {
+          chains: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
+          methods: ["solana_signMessage"],
+          events: []
+        }
+      }
+
+      const jwk = crypto.getRandomValues(new Uint8Array(32))
+
+      const client = await IrnClient.open(WalletConnect.RELAY, jwk, "c6c9bacd35afa3eb9e6cccf6d8464395")
+
+      const pairing = await WcPairing.generate(client)
+
+      port.postMessage(new RpcRequest(crypto.randomUUID(), "pairingChanged", [pairing.url]))
+
+      const upgraded = Promise.withResolvers<WcSession>()
+      stack.defer(() => upgraded.reject())
+      upgraded.promise.catch(() => { })
+
+      pairing.addEventListener("upgrade", event => upgraded.resolve(event.data), { signal: cleaner.signal })
+      pairing.addEventListener("close", upgraded.reject, { signal: cleaner.signal })
+      signal.addEventListener("abort", upgraded.reject, { signal: cleaner.signal })
+
+      await pairing.open()
+
+      stack.defer(async () => await pairing.close())
+      stack.defer(async () => await pairing.delete())
+
+      await pairing.propose({ self, requiredNamespaces })
+
+      const session = await upgraded.promise
+
+      const onevent = (data: any) => console.log("Session event:", data)
+
+      session.addEventListener("event", event => onevent(event.data), { signal: session.closing })
+      session.addEventListener("close", () => console.log("Session closed"), { signal: session.closing })
+
+      const settled = Promise.withResolvers<WcSessionSettleParams>()
+      stack.defer(() => settled.reject())
+      settled.promise.catch(() => { })
+
+      session.addEventListener("settle", event => settled.resolve(event.data), { signal: cleaner.signal })
+      session.addEventListener("close", settled.reject, { signal: cleaner.signal })
+      signal.addEventListener("abort", settled.reject, { signal: cleaner.signal })
+
+      await session.open()
+
+      let success = false
+
+      stack.defer(async () => success ? undefined : await session.close())
+      stack.defer(async () => success ? undefined : await session.delete())
+
+      const stl = await settled.promise
+
+      success = true
+
+      // return { wcs: session, jwk, stl }
+
+      return
+    }
+
+    if (request.method === "wc_abandon") {
+      const _ = request.params
+
+      aborters.get(port)?.abort()
+
+      return
     }
 
     if (request.method === "account") {
@@ -231,7 +329,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "accounts") {
-      const [] = request.params as []
+      const _ = request.params
 
       const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
 
@@ -266,12 +364,14 @@ chrome.runtime.onConnect.addListener((port) => {
       port.postMessage(response)
 
       return
-    } catch (e: unknown) {
+    } catch (error: unknown) {
+      console.error(error)
+
       const request = RpcRequest.from(init)
 
-      const response = new RpcErr(request.id, RpcError.rewrap(e))
+      const response = new RpcErr(request.id, RpcError.rewrap(error))
 
-      console.log("<-", response)
+      console.error("<-", response)
 
       port.postMessage(response)
 

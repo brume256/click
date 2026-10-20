@@ -2,6 +2,7 @@
 
 import { InOther } from "@/libs/anchor/mod.tsx";
 import { InButton, WideOppositeButton } from "@/libs/button/mod.tsx";
+import { Errors } from "@/libs/errors/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
@@ -236,13 +237,16 @@ export function ColorMenu(props: { ok(color: Nullable<string>): void }) {
   </div>
 }
 
-export function Display(props: {}) {
+export function Connect(props: { channel: Channel }) {
+  const { channel } = props
+
   const close = useCloseContext().getOrThrow()
 
   const path = usePathContext().getOrThrow()
   const hash = useHashSubpath(path)
 
-  const [url, setUrl] = useState<string>()
+  const [code, setCode] = useState<string>()
+  const [blob, setBlob] = useState<string>()
 
   const [$title, setTitle] = useState("")
 
@@ -251,38 +255,61 @@ export function Display(props: {}) {
   const [color, setColor] = useState<Nullable<string>>(["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][Math.floor(Math.random() * 16)])
 
   useEffect(() => {
-    const source = new TextEncoder().encode("wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae")
-    const matrix = new QrEncoder("byte").encode(source)
+    channel.request<void>({ method: "wc_propose" }).catch(Errors.display).finally(() => close())
+    return () => void channel.request<void>({ method: "wc_abandon" }).catch(Errors.display)
+  }, [])
 
-    const code = new OffscreenCanvas(matrix.width, matrix.width)
-    const rgba = new ImageData(matrix.width, matrix.width)
+  const onMessage = useCallback((message: RpcMessageInit) => {
+    if ("method" in message === false)
+      return
 
-    for (let i = 0; i < matrix.array.length; i++) {
-      rgba.data[i * 4 + 0] = matrix.array[i] % 2 ? 255 : 0
-      rgba.data[i * 4 + 1] = matrix.array[i] % 2 ? 255 : 0
-      rgba.data[i * 4 + 2] = matrix.array[i] % 2 ? 255 : 0
-      rgba.data[i * 4 + 3] = 255
+    const request = RpcRequest.from(message)
+
+    if (request.method === "pairingChanged") {
+      const [code] = request.params as [string]
+
+      setCode(code)
+
+      const source = new TextEncoder().encode(code)
+      const matrix = new QrEncoder("byte").encode(source)
+
+      const image = new OffscreenCanvas(matrix.width, matrix.width)
+      const pixel = new ImageData(matrix.width, matrix.width)
+
+      for (let i = 0; i < matrix.array.length; i++) {
+        pixel.data[i * 4 + 0] = matrix.array[i] % 2 ? 255 : 0
+        pixel.data[i * 4 + 1] = matrix.array[i] % 2 ? 255 : 0
+        pixel.data[i * 4 + 2] = matrix.array[i] % 2 ? 255 : 0
+        pixel.data[i * 4 + 3] = 255
+      }
+
+      image.getContext("2d")!.putImageData(pixel, 0, 0)
+
+      const canvas = new OffscreenCanvas(300, 300)
+
+      const context = canvas.getContext("2d")!
+      context.imageSmoothingEnabled = false
+      context.drawImage(image, 0, 0, matrix.width, matrix.width, 0, 0, canvas.width, canvas.width)
+
+      canvas.convertToBlob({ type: "image/png" }).then((blob) => setBlob(URL.createObjectURL(blob!)))
+
+      return
     }
-
-    code.getContext("2d")!.putImageData(rgba, 0, 0)
-
-    const canvas = new OffscreenCanvas(300, 300)
-
-    const context = canvas.getContext("2d")!
-    context.imageSmoothingEnabled = false
-    context.drawImage(code, 0, 0, matrix.width, matrix.width, 0, 0, canvas.width, canvas.width)
-
-    canvas.convertToBlob({ type: "image/png" }).then((blob) => setUrl(URL.createObjectURL(blob!)))
 
     return
   }, [])
 
+  useEffect(() => {
+    channel.port.onMessage.addListener(onMessage)
+    return () => channel.port.onMessage.removeListener(onMessage)
+  }, [channel, onMessage])
+
   useEffect(() => () => {
-    if (url == null)
+    if (blob == null)
       return
     else
-      URL.revokeObjectURL(url)
-  }, [url])
+      URL.revokeObjectURL(blob)
+  }, [blob])
 
   const onClose = useCallback(() => {
     close()
@@ -382,10 +409,10 @@ export function Display(props: {}) {
           readOnly
           autoComplete="off"
           onFocus={e => e.currentTarget.select()}
-          value="wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae" />
+          value={code} />
         <div className="flex items-center gap-2">
           <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-            href={url}
+            href={blob}
             target="_blank"
             rel="noreferrer">
             <InOther>
@@ -447,7 +474,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     <SubpathProvider value={path}>
       {path.url.pathname === "/connect" &&
         <PathBoard>
-          <Display />
+          <Connect channel={channel} />
         </PathBoard>}
     </SubpathProvider>
     {!account && <Fragment>
