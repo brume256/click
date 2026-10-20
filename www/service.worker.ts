@@ -188,11 +188,13 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "wc_propose") {
       const _ = request.params
 
+      await using stack = new AsyncDisposableStack()
+
+      let success = false
+
       const aborter = new AbortController()
       aborters.set(port, aborter)
       const { signal } = aborter
-
-      await using stack = new AsyncDisposableStack()
 
       const cleaner = new AbortController()
       stack.defer(() => cleaner.abort())
@@ -221,6 +223,9 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const client = await IrnClient.open(WalletConnect.RELAY, jwk, "c6c9bacd35afa3eb9e6cccf6d8464395")
 
+      stack.defer(() => console.log("Deferred log executed"))
+      stack.defer(() => success ? undefined : client.close())
+
       const pairing = await WcPairing.generate(client)
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "pairingChanged", [pairing.url]))
@@ -238,7 +243,7 @@ chrome.runtime.onConnect.addListener((port) => {
       stack.defer(async () => await pairing.close())
       stack.defer(async () => await pairing.delete())
 
-      await pairing.propose({ self, requiredNamespaces })
+      await pairing.propose({ self, requiredNamespaces }, signal)
 
       const session = await upgraded.promise
 
@@ -256,8 +261,6 @@ chrome.runtime.onConnect.addListener((port) => {
       signal.addEventListener("abort", settled.reject, { signal: cleaner.signal })
 
       await session.open()
-
-      let success = false
 
       stack.defer(async () => success ? undefined : await session.close())
       stack.defer(async () => success ? undefined : await session.delete())
