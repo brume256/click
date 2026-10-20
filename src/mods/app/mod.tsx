@@ -332,7 +332,9 @@ export function Display(props: {}) {
       </button>
     </div>
     <form className="grow flex flex-col">
-      <input className="hidden" name="username" />
+      <input className="hidden"
+        autoComplete="off"
+        name="username" />
       <div className="h-6" />
       <div className="font-medium">
         Title
@@ -343,6 +345,7 @@ export function Display(props: {}) {
       <div className="h-4" />
       <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
         <input className="w-full focus-visible:outline-none"
+          autoComplete="off"
           placeholder={title}
           onChange={e => setTitle(e.target.value)}
           value={$title} />
@@ -358,6 +361,7 @@ export function Display(props: {}) {
       <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
         <input className="w-full focus-visible:outline-none"
           readOnly
+          autoComplete="off"
           onFocus={e => e.currentTarget.select()}
           value="wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=91303dedf64285cbbaf9120f6e9d160a5c8aa3deb67017a3874cd272323f48ae" />
         <div className="flex items-center gap-2">
