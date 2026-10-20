@@ -46,3 +46,15 @@ export function WideContrastAnchor(props: ChildrenProps & JSX.IntrinsicElements[
     </InOther>
   </a>
 }
+
+export function WideOppositeAnchor(props: ChildrenProps & JSX.IntrinsicElements["a"] & { "aria-disabled"?: boolean }) {
+  const { children, "aria-disabled": disabled = false, ...rest } = props
+
+  return <a className="flex-1 group po-2 bg-opposite text-opposite rounded-xl not-aria-disabled:hover:bg-opposite-double-contrast focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-opposite aria-disabled:opacity-50"
+    aria-disabled={disabled}
+    {...rest}>
+    <InOther>
+      {children}
+    </InOther>
+  </a>
+}

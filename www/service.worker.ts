@@ -12,8 +12,8 @@ interface Addresses {
 
 interface Account {
   readonly title: string
-  readonly addrs: Addresses
   readonly color: Nullable<string>
+  readonly addrs: Addresses
   readonly wconn: { jwk: string, tpc: string, key: string }
 }
 
@@ -225,7 +225,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "wc_propose") {
-      const _ = request.params
+      const [title, color] = request.params as [string, string]
 
       await using stack = new AsyncDisposableStack()
 
@@ -316,7 +316,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const eth = eip155.accounts[0].split(":")[2]
       const sol = solana.accounts[0].split(":")[2]
 
-      accounts.push({ title: "Main", addrs: { eth, sol }, color: "blue", wconn })
+      accounts.push({ title, color, addrs: { eth, sol }, wconn })
 
       await chrome.storage.session.set({ accounts })
 

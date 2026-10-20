@@ -1,8 +1,7 @@
 /// <reference types="chrome" />
 
 import { InOther } from "@/libs/anchor/mod.tsx";
-import { InButton, WideOppositeButton } from "@/libs/button/mod.tsx";
-import { Errors } from "@/libs/errors/mod.ts";
+import { InButton, WideContrastButton, WideOppositeButton } from "@/libs/button/mod.tsx";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
@@ -237,26 +236,17 @@ export function ColorMenu(props: { ok(color: Nullable<string>): void }) {
   </div>
 }
 
-export function Connect(props: { channel: Channel }) {
-  const { channel } = props
+export function Connect(props: { channel: Channel } & { title: string } & { color: Nullable<string> }) {
+  const { channel, title, color } = props
 
   const close = useCloseContext().getOrThrow()
-
-  const path = usePathContext().getOrThrow()
-  const hash = useHashSubpath(path)
 
   const [code, setCode] = useState<string>()
   const [blob, setBlob] = useState<string>()
 
-  const [$title, setTitle] = useState("")
-
-  const title = useDeferredValue($title || "Main")
-
-  const [color, setColor] = useState<Nullable<string>>(["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][Math.floor(Math.random() * 16)])
-
   useEffect(() => {
-    channel.request<void>({ method: "wc_propose" }).catch(Errors.display).finally(() => close())
-    return () => void channel.request<void>({ method: "wc_abandon" }).catch(Errors.display)
+    channel.request<void>({ method: "wc_propose", params: [title, color] }).then(() => close()).catch(console.error)
+    return () => void channel.request<void>({ method: "wc_abandon" }).catch(console.error)
   }, [])
 
   const onMessage = useCallback((message: RpcMessageInit) => {
@@ -311,9 +301,61 @@ export function Connect(props: { channel: Channel }) {
       URL.revokeObjectURL(blob)
   }, [blob])
 
+  return <Fragment>
+    <div className="font-medium">
+      WalletConnect code
+    </div>
+    <div className="text-default-contrast">
+      Your WalletConnect pairing code. Use it to connect your wallet.
+    </div>
+    <div className="h-4" />
+    <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
+      <input className="w-full focus-visible:outline-none"
+        readOnly
+        autoComplete="off"
+        onFocus={e => e.currentTarget.select()}
+        value={code} />
+      <div className="flex items-center gap-2">
+        <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+          href={blob}
+          target="_blank"
+          rel="noreferrer">
+          <InOther>
+            <Outline.QrCodeIcon className="size-5" />
+          </InOther>
+        </a>
+      </div>
+    </div>
+  </Fragment>
+}
+
+export function Create(props: { channel: Channel }) {
+  const { channel } = props
+
+  const close = useCloseContext().getOrThrow()
+
+  const path = usePathContext().getOrThrow()
+  const hash = useHashSubpath(path)
+
+  const [$title, setTitle] = useState("")
+
+  const title = useDeferredValue($title || "Main")
+
+  const [color, setColor] = useState<Nullable<string>>(["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][Math.floor(Math.random() * 16)])
+
+  const [connect, setConnect] = useState(false)
+
   const onClose = useCallback(() => {
     close()
   }, [close])
+
+  const onBack = useCallback(() => {
+    setConnect(false)
+  }, [])
+
+  const onNext = useCallback(() => {
+    setConnect(true)
+  }, [])
 
   return <div className="flex flex-col grow p-6 text-base">
     <SubpathProvider value={hash}>
@@ -379,55 +421,52 @@ export function Connect(props: { channel: Channel }) {
         autoComplete="off"
         name="username" />
       <div className="h-6" />
-      <div className="font-medium">
-        Title
-      </div>
-      <div className="text-default-contrast">
-        Name this account. Not shared anywhere.
-      </div>
-      <div className="h-4" />
-      <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
-        <input className="w-full focus-visible:outline-none"
-          autoComplete="off"
-          placeholder={title}
-          onChange={e => setTitle(e.target.value)}
-          value={$title} />
-        <div className="flex items-center gap-2">
-          <ColorAnchor color={color} />
+      {!connect && <Fragment>
+        <div className="font-medium">
+          Title
         </div>
-      </div>
-      <div className="h-6" />
-      <div className="font-medium">
-        WalletConnect code
-      </div>
-      <div className="text-default-contrast">
-        Your WalletConnect pairing code. Use it to connect your wallet.
-      </div>
-      <div className="h-4" />
-      <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
-        <input className="w-full focus-visible:outline-none"
-          readOnly
-          autoComplete="off"
-          onFocus={e => e.currentTarget.select()}
-          value={code} />
-        <div className="flex items-center gap-2">
-          <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-            href={blob}
-            target="_blank"
-            rel="noreferrer">
-            <InOther>
-              <Outline.QrCodeIcon className="size-5" />
-            </InOther>
-          </a>
+        <div className="text-default-contrast">
+          Name this account. Not shared anywhere.
         </div>
-      </div>
+        <div className="h-4" />
+        <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
+          <input className="w-full focus-visible:outline-none"
+            autoComplete="off"
+            placeholder={title}
+            onChange={e => setTitle(e.target.value)}
+            value={$title} />
+          <div className="flex items-center gap-2">
+            <ColorAnchor color={color} />
+          </div>
+        </div>
+      </Fragment>}
+      {connect && <Fragment>
+        <Connect
+          channel={channel}
+          title={title}
+          color={color} />
+      </Fragment>}
       <div className="h-8 grow" />
       <div className="flex items-center flex-wrap-reverse gap-2">
-        <WideOppositeButton
+        <WideContrastButton
           onClick={onClose}
           type="button">
           Cancel
-        </WideOppositeButton>
+        </WideContrastButton>
+        {!connect && <Fragment>
+          <WideOppositeButton
+            onClick={onNext}
+            type="button">
+            Next
+          </WideOppositeButton>
+        </Fragment>}
+        {connect && <Fragment>
+          <WideOppositeButton
+            onClick={onBack}
+            type="button">
+            Back
+          </WideOppositeButton>
+        </Fragment>}
       </div>
     </form>
   </div>
@@ -438,7 +477,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
 
   const path = usePathContext().getOrThrow()
 
-  const connect = useAnchorWithCoords(path, "/connect")
+  const create = useAnchorWithCoords(path, "/create")
 
   const [account, setAccount] = useState<Account>()
 
@@ -495,14 +534,14 @@ export function App(props: { channel: Channel } & { location: URL }) {
 
   return <div className="h-full w-full flex flex-col items-center p-8">
     <SubpathProvider value={path}>
-      {path.url.pathname === "/connect" &&
+      {path.url.pathname === "/create" &&
         <PathBoard>
-          <Connect channel={channel} />
+          <Create channel={channel} />
         </PathBoard>}
     </SubpathProvider>
     {!account && <Fragment>
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto animate-opacity-in">
-        {location.origin}
+        Choose an account
       </div>
     </Fragment>}
     {account && <Fragment key={account.addrs.eth}>
@@ -556,29 +595,29 @@ export function App(props: { channel: Channel } & { location: URL }) {
     </Fragment>}
     <div className="h-4 grow shrink-0" />
     <div className="mt-28 w-full flex flex-col items-center">
-      {accounts.map((x, i) =>
+      {accounts.map(x =>
         <Fragment key={x.addrs.eth}>
-          <AccountCard index={i} account={x} connect={onConnect} />
+          <AccountCard account={x} connect={onConnect} />
         </Fragment>)}
-      <a className="-mt-28 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
+      <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
         style={{ zIndex: accounts.length }}
-        onKeyDown={connect.onKeyDown}
-        onClick={connect.onClick}
-        href={connect.url.hash}>
+        onKeyDown={create.onKeyDown}
+        onClick={create.onClick}
+        href={create.url.hash}>
         <Outline.PlusIcon className="size-8" />
       </a>
     </div>
   </div>
 }
 
-export function AccountCard(props: { index: number } & { account: Account } & { connect(account: Account): void }) {
-  const { index, account, connect } = props
+export function AccountCard(props: { account: Account } & { connect(account: Account): void }) {
+  const { account, connect } = props
 
   const onClick = useCallback(() => {
     connect(account)
   }, [connect, account])
 
-  return <button type="button" className="-mt-28 w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
+  return <button type="button" className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
   data-[color=red]:bg-red-400 
   data-[color=orange]:bg-orange-400 
   data-[color=amber]:bg-amber-400 
@@ -613,7 +652,6 @@ export function AccountCard(props: { index: number } & { account: Account } & { 
   in-dark:data-[color=fuchsia]:bg-fuchsia-500
   in-dark:data-[color=pink]:bg-pink-500
   in-dark:data-[color=rose]:bg-rose-500"
-    style={{ zIndex: index }}
     data-theme={account.color == null ? "opposite" : "dark"}
     data-color={account.color}
     onClick={onClick}>
