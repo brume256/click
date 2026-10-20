@@ -594,7 +594,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
       </button>
     </Fragment>}
     <div className="h-4 grow shrink-0" />
-    <div className="mt-28 w-full flex flex-col items-center">
+    <div className="mt-28 w-full flex flex-col items-center isolate">
       {accounts.map(x =>
         <Fragment key={x.addrs.eth}>
           <AccountCard account={x} connect={onConnect} />
