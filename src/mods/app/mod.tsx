@@ -1,12 +1,12 @@
 /// <reference types="chrome" />
 
-import { InOther } from "@/libs/anchor/mod.tsx";
-import { InButton, WideContrastButton, WideOppositeButton } from "@/libs/button/mod.tsx";
+import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
+import { InButton } from "@/libs/button/mod.tsx";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
-import { PathBoard, PathPaper } from "@hazae41/modal";
+import { PathBoard, PathBottom, PathPaper } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
 import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -236,10 +236,15 @@ export function ColorMenu(props: { ok(color: Nullable<string>): void }) {
   </div>
 }
 
-export function Connect(props: { channel: Channel } & { title: string } & { color: Nullable<string> }) {
-  const { channel, title, color } = props
+export function Connect(props: { channel: Channel } & { title: string } & { color: Nullable<string> } & { close(): void }) {
+  const { channel, title, color, close: close1 } = props
 
-  const close = useCloseContext().getOrThrow()
+  const close0 = useCloseContext().getOrThrow()
+
+  const close = useCallback(() => {
+    setTimeout(() => close0(), 0)
+    setTimeout(() => close1(), 300)
+  }, [close0, close1])
 
   const [code, setCode] = useState<string>()
   const [blob, setBlob] = useState<string>()
@@ -301,7 +306,7 @@ export function Connect(props: { channel: Channel } & { title: string } & { colo
       URL.revokeObjectURL(blob)
   }, [blob])
 
-  return <Fragment>
+  return <div className="flex flex-col grow p-6 text-base">
     <div className="font-medium">
       WalletConnect code
     </div>
@@ -326,7 +331,7 @@ export function Connect(props: { channel: Channel } & { title: string } & { colo
         </a>
       </div>
     </div>
-  </Fragment>
+  </div>
 }
 
 export function Create(props: { channel: Channel }) {
@@ -343,19 +348,7 @@ export function Create(props: { channel: Channel }) {
 
   const [color, setColor] = useState<Nullable<string>>(["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][Math.floor(Math.random() * 16)])
 
-  const [connect, setConnect] = useState(false)
-
-  const onClose = useCallback(() => {
-    close()
-  }, [close])
-
-  const onBack = useCallback(() => {
-    setConnect(false)
-  }, [])
-
-  const onNext = useCallback(() => {
-    setConnect(true)
-  }, [])
+  const connect = useAnchorWithCoords(hash, "/connect")
 
   return <div className="flex flex-col grow p-6 text-base">
     <SubpathProvider value={hash}>
@@ -363,6 +356,14 @@ export function Create(props: { channel: Channel }) {
         <PathPaper>
           <ColorMenu ok={setColor} />
         </PathPaper>}
+      {hash.url.pathname === "/connect" &&
+        <PathBottom>
+          <Connect
+            channel={channel}
+            title={title}
+            color={color}
+            close={close} />
+        </PathBottom>}
     </SubpathProvider>
     <h1 className="text-xl font-medium">
       Add account
@@ -421,52 +422,31 @@ export function Create(props: { channel: Channel }) {
         autoComplete="off"
         name="username" />
       <div className="h-6" />
-      {!connect && <Fragment>
-        <div className="font-medium">
-          Title
+      <div className="font-medium">
+        Title
+      </div>
+      <div className="text-default-contrast">
+        Name this account. Not shared anywhere.
+      </div>
+      <div className="h-4" />
+      <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
+        <input className="w-full focus-visible:outline-none"
+          autoComplete="off"
+          placeholder={title}
+          onChange={e => setTitle(e.target.value)}
+          value={$title} />
+        <div className="flex items-center gap-2">
+          <ColorAnchor color={color} />
         </div>
-        <div className="text-default-contrast">
-          Name this account. Not shared anywhere.
-        </div>
-        <div className="h-4" />
-        <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
-          <input className="w-full focus-visible:outline-none"
-            autoComplete="off"
-            placeholder={title}
-            onChange={e => setTitle(e.target.value)}
-            value={$title} />
-          <div className="flex items-center gap-2">
-            <ColorAnchor color={color} />
-          </div>
-        </div>
-      </Fragment>}
-      {connect && <Fragment>
-        <Connect
-          channel={channel}
-          title={title}
-          color={color} />
-      </Fragment>}
+      </div>
       <div className="h-8 grow" />
       <div className="flex items-center flex-wrap-reverse gap-2">
-        <WideContrastButton
-          onClick={onClose}
-          type="button">
-          Cancel
-        </WideContrastButton>
-        {!connect && <Fragment>
-          <WideOppositeButton
-            onClick={onNext}
-            type="button">
-            Next
-          </WideOppositeButton>
-        </Fragment>}
-        {connect && <Fragment>
-          <WideOppositeButton
-            onClick={onBack}
-            type="button">
-            Back
-          </WideOppositeButton>
-        </Fragment>}
+        <WideOppositeAnchor
+          onKeyDown={connect.onKeyDown}
+          onClick={connect.onClick}
+          href={connect.url.hash}>
+          Connect
+        </WideOppositeAnchor>
       </div>
     </form>
   </div>
