@@ -111,6 +111,28 @@ chrome.runtime.onConnect.addListener((port) => {
       return await session.session.request({ chainId: "eip155:1", request })
     }
 
+    if (request.method === "eth_sendTransaction") {
+      const session = sessions.get(origin)
+
+      if (session == null)
+        throw new RpcInvalidRequestError()
+
+      const request = { method, params }
+
+      return await session.session.request({ chainId: "eip155:1", request })
+    }
+
+    if (request.method === "eth_signTypedData_v4") {
+      const session = sessions.get(origin)
+
+      if (session == null)
+        throw new RpcInvalidRequestError()
+
+      const request = { method, params }
+
+      return await session.session.request({ chainId: "eip155:1", request })
+    }
+
     if (request.method === "solana_connect") {
       const { onlyIfTrusted } = params as { onlyIfTrusted?: boolean }
 
@@ -144,6 +166,17 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "solana_signMessage") {
+      const session = sessions.get(origin)
+
+      if (session == null)
+        throw new RpcInvalidRequestError()
+
+      const request = { method, params }
+
+      return await session.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
+    }
+
+    if (request.method === "solana_signTransaction") {
       const session = sessions.get(origin)
 
       if (session == null)
