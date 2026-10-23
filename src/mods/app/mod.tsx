@@ -6,7 +6,7 @@ import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
-import { PathBoard, PathBottom, PathPaper } from "@hazae41/modal";
+import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
 import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -353,17 +353,17 @@ export function Create(props: { channel: Channel }) {
   return <div className="flex flex-col grow p-6 text-base">
     <SubpathProvider value={hash}>
       {hash.url.pathname === "/color" &&
-        <PathPaper>
+        <PathBubble>
           <ColorMenu ok={setColor} />
-        </PathPaper>}
+        </PathBubble>}
       {hash.url.pathname === "/connect" &&
-        <PathBottom>
+        <PathPrompt>
           <Connect
             channel={channel}
             title={title}
             color={color}
             close={close} />
-        </PathBottom>}
+        </PathPrompt>}
     </SubpathProvider>
     <h1 className="text-xl font-medium">
       Add account
@@ -515,9 +515,9 @@ export function App(props: { channel: Channel } & { location: URL }) {
   return <div className="h-full w-full flex flex-col items-center p-8">
     <SubpathProvider value={path}>
       {path.url.pathname === "/create" &&
-        <PathBoard>
+        <PathWindow>
           <Create channel={channel} />
-        </PathBoard>}
+        </PathWindow>}
     </SubpathProvider>
     {!account && <Fragment>
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto animate-opacity-in">

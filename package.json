@@ -4,7 +4,7 @@
   "version": "2.0.1",
   "scripts": {
     "process:chainlist": "deno x --unstable-worker-options saumon ./src/libs/chainlist/mod.macro.ts",
-    "examine": "deno lint ./src && deno check ./src && deno test ./src",
+    "examine": "deno lint ./www ./src && deno check ./www ./src && deno test ./www ./src",
     "prepack": "deno x glace ./www --out=./out",
     "version": "npm run process:version && git add ."
   },
@@ -30,7 +30,7 @@
     "@hazae41/keccak256": "^2.0.4",
     "@hazae41/labase": "^1.0.34",
     "@hazae41/latrine": "^2.1.8",
-    "@hazae41/modal": "^1.0.0",
+    "@hazae41/modal": "^1.0.2",
     "@hazae41/pendule": "^1.0.4",
     "@hazae41/react-close-context": "^1.0.5",
     "@hazae41/request-idle-callback-polyfill": "1.0.0",

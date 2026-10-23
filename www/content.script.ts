@@ -1,4 +1,5 @@
-// deno-lint-ignore-file no-namespace require-await
+// deno-lint-ignore-file no-namespace
+
 /// <reference types="chrome" />
 
 import { RpcErr, RpcError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
