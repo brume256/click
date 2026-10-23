@@ -243,7 +243,7 @@ export function Connect(props: { channel: Channel } & { title: string } & { colo
 
   const close = useCallback(() => {
     setTimeout(() => close0(), 0)
-    setTimeout(() => close1(), 300)
+    setTimeout(() => close1(), 500)
   }, [close0, close1])
 
   const [code, setCode] = useState<string>()
