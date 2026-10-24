@@ -3,6 +3,7 @@
 import { WalletConnectAccount } from "@/libs/account/mod.ts";
 import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
 import { InButton } from "@/libs/button/mod.tsx";
+import { useCopy } from "@/libs/copy/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
@@ -296,6 +297,8 @@ export function Connect(props: { channel: Channel } & { title: string } & { colo
       URL.revokeObjectURL(blob)
   }, [blob])
 
+  const { copied, copyOrDisplay } = useCopy(code)
+
   return <div className="flex flex-col grow p-6 text-base">
     <div className="font-medium">
       WalletConnect code
@@ -311,6 +314,13 @@ export function Connect(props: { channel: Channel } & { title: string } & { colo
         onFocus={e => e.currentTarget.select()}
         value={code} />
       <div className="flex items-center gap-2">
+        <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+          type="button"
+          onClick={copyOrDisplay}>
+          <InButton>
+            {copied ? <Outline.CheckIcon className="size-5" /> : <Outline.DocumentDuplicateIcon className="size-5" />}
+          </InButton>
+        </button>
         <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
           href={blob}
           target="_blank"
