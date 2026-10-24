@@ -4,6 +4,7 @@ import { WalletConnectAccount } from "@/libs/account/mod.ts";
 import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
 import { InButton } from "@/libs/button/mod.tsx";
 import { useCopy } from "@/libs/copy/mod.ts";
+import { Errors } from "@/libs/errors/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
@@ -495,13 +496,13 @@ export function App(props: { channel: Channel } & { location: URL }) {
     channel.request<WalletConnectAccount>({ method: "wc_account", params: [location] }).then(setAccount)
   }, [channel, location])
 
-  const onConnect = useCallback(async (account: WalletConnectAccount) => {
+  const onConnect = useCallback((account: WalletConnectAccount) => Promise.try(async () => {
     await channel.request({ method: "wc_connect", params: [location, account] })
-  }, [channel, location])
+  }).catch(Errors.display), [channel, location])
 
-  const onDisconnect = useCallback(async () => {
+  const onDisconnect = useCallback(() => Promise.try(async () => {
     await channel.request({ method: "wc_disconnect", params: [location] })
-  }, [channel, location])
+  }).catch(Errors.display), [channel, location])
 
   const [accounts, setAccounts] = useState<WalletConnectAccount[]>([])
 
@@ -597,10 +598,10 @@ export function AccountCard(props: { channel: Channel } & { location: URL } & { 
     connect(account)
   }, [connect, account])
 
-  const onDelete = useCallback(async (event: MouseEvent) => {
+  const onDelete = useCallback((event: MouseEvent) => Promise.try(async () => {
     event.stopPropagation()
     await channel.request(new RpcRequest(crypto.randomUUID(), "wc_delete", [location, account]))
-  }, [channel, location, account])
+  }).catch(Errors.display), [channel, location, account])
 
   return <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
   data-[color=red]:bg-red-400 
