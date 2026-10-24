@@ -10,20 +10,21 @@ interface Addresses {
   readonly sol: string
 }
 
-interface Account {
+interface WalletConnectAccount {
+  readonly genre: "walletconnect"
   readonly title: string
   readonly color: Nullable<string>
   readonly addrs: Addresses
   readonly wconn: { jwk: string, tpc: string, key: string }
 }
 
-interface Session {
-  readonly account: Account
+interface WalletConnectSession {
+  readonly account: WalletConnectAccount
   readonly session: WcSession
 }
 
-const sessions = new Map<string, Session>()
-const requests = new Map<string, PromiseWithResolvers<Session>>()
+const sessions = new Map<string, WalletConnectSession>()
+const requests = new Map<string, PromiseWithResolvers<WalletConnectSession>>()
 
 const aborters = new Map<chrome.runtime.Port, AbortController>()
 const channels = new Map<chrome.runtime.Port, string>()
@@ -85,7 +86,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const current = Promise.withResolvers<Session>()
+      const current = Promise.withResolvers<WalletConnectSession>()
 
       requests.set(origin, current)
       stack.defer(() => requests.delete(origin))
@@ -150,7 +151,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const current = Promise.withResolvers<Session>()
+      const current = Promise.withResolvers<WalletConnectSession>()
 
       requests.set(origin, current)
       stack.defer(() => requests.delete(origin))
@@ -342,14 +343,14 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const wconn = { jwk, tpc, key }
 
-      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
+      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: WalletConnectAccount[] }>("accounts")
 
       const { eip155, solana } = namespaces as { eip155: { accounts: string[] }, solana: { accounts: string[] } }
 
       const eth = eip155.accounts[0].split(":")[2]
       const sol = solana.accounts[0].split(":")[2]
 
-      accounts.push({ title, color, addrs: { eth, sol }, wconn })
+      accounts.push({ genre: "walletconnect", title, color, addrs: { eth, sol }, wconn })
 
       await chrome.storage.session.set({ accounts })
 
@@ -369,7 +370,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "wc_accounts") {
       const _ = request.params
 
-      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: Account[] }>("accounts")
+      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: WalletConnectAccount[] }>("accounts")
 
       return accounts
     }
@@ -388,7 +389,11 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "wc_connect") {
-      const [location, account] = request.params as [string, Account]
+      const [location, account] = request.params as [string, WalletConnectAccount]
+
+      await using stack = new AsyncDisposableStack()
+
+      let success = false
 
       const { origin } = new URL(location)
 
@@ -396,6 +401,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const sticky = Uint8Array.fromBase64(jwk)
       const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
+
+      stack.defer(() => success ? undefined : client.close())
 
       const channel = new WcChannel(client, tpc, Uint8Array.fromBase64(key))
       const session = new WcSession(channel)
@@ -418,6 +425,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await session.open()
 
+      stack.defer(async () => success ? undefined : await session.close())
+
       sessions.set(origin, { account, session })
 
       for (const channel of channels) {
@@ -433,6 +442,8 @@ chrome.runtime.onConnect.addListener((port) => {
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", [account]))
 
       requests.get(origin)?.resolve({ account, session })
+
+      success = true
 
       return true
     }
