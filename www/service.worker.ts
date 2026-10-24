@@ -328,7 +328,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const tpc = session.channel.topic
       const key = session.channel.key.toBase64()
 
-      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: WalletConnectAccount[] }>("accounts")
+      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
 
       const { eip155, solana } = namespaces as { eip155: { accounts: string[] }, solana: { accounts: string[] } }
 
@@ -337,7 +337,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       accounts.push({ uuid: crypto.randomUUID(), type: "walletconnect", title, color, address: { eip155: eth, solana: sol }, details: { jwk, tpc, key } })
 
-      await chrome.storage.session.set({ accounts })
+      await chrome.storage.local.set({ accounts })
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountsChanged", accounts))
 
@@ -355,7 +355,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "wc_accounts") {
       const _ = request.params
 
-      const { accounts = [] } = await chrome.storage.session.get<{ accounts?: WalletConnectAccount[] }>("accounts")
+      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
 
       return accounts
     }
