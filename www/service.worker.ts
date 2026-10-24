@@ -1,22 +1,9 @@
 /// <reference types="chrome" />
 
+import { WalletConnectAccount } from "@/libs/account/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
-import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
 import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams, WcUserRejectedRequestError } from "@hazae41/latrine";
-
-interface Addresses {
-  readonly eth: string
-  readonly sol: string
-}
-
-interface WalletConnectAccount {
-  readonly genre: "walletconnect"
-  readonly title: string
-  readonly color: Nullable<string>
-  readonly addrs: Addresses
-  readonly wconn: { jwk: string, tpc: string, key: string }
-}
 
 interface WalletConnectSession {
   readonly account: WalletConnectAccount
@@ -68,7 +55,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const session = sessions.get(origin)
 
       if (session != null)
-        return [session.account.addrs.eth]
+        return [session.account.address.eip155]
 
       return []
     }
@@ -77,7 +64,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const session = sessions.get(origin)
 
       if (session != null)
-        return [session.account.addrs.eth]
+        return [session.account.address.eip155]
 
       const previous = requests.get(origin)
 
@@ -98,7 +85,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const session2 = await current.promise
 
-      return [session2.account.addrs.eth]
+      return [session2.account.address.eip155]
     }
 
     if (request.method === "personal_sign") {
@@ -140,7 +127,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const session = sessions.get(origin)
 
       if (session != null)
-        return [session.account.addrs.sol]
+        return [session.account.address.solana]
       if (onlyIfTrusted)
         throw new WcUserRejectedRequestError()
 
@@ -163,7 +150,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const session2 = await current.promise
 
-      return [session2.account.addrs.sol]
+      return [session2.account.address.solana]
     }
 
     if (request.method === "solana_signMessage") {
@@ -341,8 +328,6 @@ chrome.runtime.onConnect.addListener((port) => {
       const tpc = session.channel.topic
       const key = session.channel.key.toBase64()
 
-      const wconn = { jwk, tpc, key }
-
       const { accounts = [] } = await chrome.storage.session.get<{ accounts?: WalletConnectAccount[] }>("accounts")
 
       const { eip155, solana } = namespaces as { eip155: { accounts: string[] }, solana: { accounts: string[] } }
@@ -350,7 +335,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const eth = eip155.accounts[0].split(":")[2]
       const sol = solana.accounts[0].split(":")[2]
 
-      accounts.push({ genre: "walletconnect", title, color, addrs: { eth, sol }, wconn })
+      accounts.push({ uuid: crypto.randomUUID(), type: "walletconnect", title, color, address: { eip155: eth, solana: sol }, details: { jwk, tpc, key } })
 
       await chrome.storage.session.set({ accounts })
 
@@ -397,7 +382,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      const { jwk, tpc, key } = account.wconn
+      const { jwk, tpc, key } = account.details
 
       const sticky = Uint8Array.fromBase64(jwk)
       const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
@@ -435,8 +420,8 @@ chrome.runtime.onConnect.addListener((port) => {
         if (origin2 !== origin)
           continue
 
-        port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_connect", [account.addrs.sol]))
-        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account.addrs.eth]))
+        port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_connect", [account.address.solana]))
+        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account.address.eip155]))
       }
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", [account]))

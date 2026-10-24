@@ -1,5 +1,6 @@
 /// <reference types="chrome" />
 
+import { WalletConnectAccount } from "@/libs/account/mod.ts";
 import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
 import { InButton } from "@/libs/button/mod.tsx";
 import { Outline } from "@/libs/heroicons/mod.ts";
@@ -12,17 +13,6 @@ import { QrEncoder } from "@hazae41/visage";
 import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 
 React;
-
-interface Addresses {
-  readonly eth: string
-  readonly sol: string
-}
-
-interface Account {
-  readonly title: string
-  readonly addrs: Addresses
-  readonly color: Nullable<string>
-}
 
 export function useBackground() {
   const port = useMemo(() => {
@@ -459,7 +449,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
 
   const create = useAnchorWithCoords(path, "/create")
 
-  const [account, setAccount] = useState<Account>()
+  const [account, setAccount] = useState<WalletConnectAccount>()
 
   const onMessage = useCallback((message: RpcMessageInit) => {
     if ("method" in message === false)
@@ -468,7 +458,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     const request = RpcRequest.from(message)
 
     if (request.method === "wc_accountChanged") {
-      const [account] = request.params as [Account]
+      const [account] = request.params as [WalletConnectAccount]
 
       setAccount(account)
 
@@ -476,7 +466,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     }
 
     if (request.method === "wc_accountsChanged") {
-      const accounts = request.params as Account[]
+      const accounts = request.params as WalletConnectAccount[]
 
       setAccounts(accounts)
 
@@ -492,10 +482,10 @@ export function App(props: { channel: Channel } & { location: URL }) {
   }, [channel, onMessage])
 
   useEffect(() => {
-    channel.request<Account>({ method: "wc_account", params: [location] }).then(setAccount)
+    channel.request<WalletConnectAccount>({ method: "wc_account", params: [location] }).then(setAccount)
   }, [channel, location])
 
-  const onConnect = useCallback(async (account: Account) => {
+  const onConnect = useCallback(async (account: WalletConnectAccount) => {
     await channel.request({ method: "wc_connect", params: [location, account] })
   }, [channel, location])
 
@@ -503,10 +493,10 @@ export function App(props: { channel: Channel } & { location: URL }) {
     await channel.request({ method: "wc_disconnect", params: [location] })
   }, [channel, location])
 
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const [accounts, setAccounts] = useState<WalletConnectAccount[]>([])
 
   useEffect(() => {
-    channel.request<Account[]>({ method: "wc_accounts", params: [location] }).then(setAccounts)
+    channel.request<WalletConnectAccount[]>({ method: "wc_accounts", params: [location] }).then(setAccounts)
   }, [channel, location])
 
   if (location == null)
@@ -524,7 +514,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
         Choose an account
       </div>
     </Fragment>}
-    {account && <Fragment key={account.addrs.eth}>
+    {account && <Fragment key={account.address.eip155}>
       <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 transition-transform
       data-[color=red]:bg-red-400 
       data-[color=orange]:bg-orange-400 
@@ -560,11 +550,11 @@ export function App(props: { channel: Channel } & { location: URL }) {
       in-dark:data-[color=fuchsia]:bg-fuchsia-500
       in-dark:data-[color=pink]:bg-pink-500
       in-dark:data-[color=rose]:bg-rose-500"
-        data-theme={accounts.find(x => x.addrs.eth === account.addrs.eth)?.color == null ? "opposite" : "dark"}
-        data-color={accounts.find(x => x.addrs.eth === account.addrs.eth)?.color}
+        data-theme={accounts.find(x => x.address.eip155 === account.address.eip155)?.color == null ? "opposite" : "dark"}
+        data-color={accounts.find(x => x.address.eip155 === account.address.eip155)?.color}
         onClick={onDisconnect}>
         <div className="font-medium text-lg">
-          {accounts.find(x => x.addrs.eth === account.addrs.eth)?.title}
+          {accounts.find(x => x.address.eip155 === account.address.eip155)?.title}
         </div>
         <div className="grow" />
         <div className="bg-default-contrast rounded-xl po-1 flex items-center gap-2">
@@ -576,7 +566,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     <div className="h-4 grow shrink-0" />
     <div className="mt-28 w-full flex flex-col items-center isolate">
       {accounts.map(x =>
-        <Fragment key={x.addrs.eth}>
+        <Fragment key={x.address.eip155}>
           <AccountCard account={x} connect={onConnect} />
         </Fragment>)}
       <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
@@ -590,7 +580,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
   </div>
 }
 
-export function AccountCard(props: { account: Account } & { connect(account: Account): void }) {
+export function AccountCard(props: { account: WalletConnectAccount } & { connect(account: WalletConnectAccount): void }) {
   const { account, connect } = props
 
   const onClick = useCallback(() => {
