@@ -5,7 +5,7 @@
   "scripts": {
     "process:chainlist": "deno x --unstable-worker-options saumon ./src/libs/chainlist/mod.macro.ts",
     "examine": "deno lint ./www ./src && deno check ./www ./src && deno test ./www ./src",
-    "prepack": "deno x glace ./www --out=./out",
+    "prepack": "deno x glace ./www --out=./out/chrome && zip -r ./out/chrome.zip ./out/chrome",
     "version": "npm run process:version && git add ."
   },
   "files": [
