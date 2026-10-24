@@ -597,7 +597,7 @@ export function AccountCard(props: { account: WalletConnectAccount } & { connect
     connect(account)
   }, [connect, account])
 
-  return <button type="button" className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
+  return <button type="button" className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
   data-[color=red]:bg-red-400 
   data-[color=orange]:bg-orange-400 
   data-[color=amber]:bg-amber-400 
