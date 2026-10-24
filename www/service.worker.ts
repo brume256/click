@@ -1,4 +1,5 @@
 /// <reference types="chrome" />
+// deno-lint-ignore-file no-unused-vars
 
 import { WalletConnectAccount } from "@/libs/account/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
@@ -360,6 +361,27 @@ chrome.runtime.onConnect.addListener((port) => {
       return accounts
     }
 
+    if (request.method === "wc_delete") {
+      const [account] = request.params as [WalletConnectAccount]
+
+      for (const [origin, session] of sessions) {
+        if (session.account.uuid === account.uuid)
+          throw new RpcInvalidRequestError()
+        else
+          continue
+      }
+
+      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
+
+      accounts.splice(accounts.findIndex(x => x.uuid === account.uuid), 1)
+
+      await chrome.storage.local.set({ accounts })
+
+      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountsChanged", accounts))
+
+      return
+    }
+
     if (request.method === "wc_account") {
       const [location] = request.params as [string]
 
@@ -460,27 +482,6 @@ chrome.runtime.onConnect.addListener((port) => {
       }
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", []))
-
-      return
-    }
-
-    if (request.method === "wc_delete") {
-      const [location, account] = request.params as [string, WalletConnectAccount]
-
-      const { origin } = new URL(location)
-
-      const current = sessions.get(origin)
-
-      if (current != null)
-        throw new RpcInvalidRequestError()
-
-      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
-
-      accounts.splice(accounts.findIndex(x => x.uuid === account.uuid), 1)
-
-      await chrome.storage.local.set({ accounts })
-
-      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountsChanged", accounts))
 
       return
     }

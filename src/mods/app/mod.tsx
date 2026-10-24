@@ -576,7 +576,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     <div className="mt-28 w-full flex flex-col items-center isolate">
       {accounts.map(x =>
         <Fragment key={x.uuid}>
-          <AccountCard channel={channel} location={location} account={x} connect={onConnect} />
+          <AccountCard channel={channel} account={x} connect={onConnect} />
         </Fragment>)}
       <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
         style={{ zIndex: accounts.length }}
@@ -589,8 +589,8 @@ export function App(props: { channel: Channel } & { location: URL }) {
   </div>
 }
 
-export function AccountCard(props: { channel: Channel } & { location: URL } & { account: WalletConnectAccount } & { connect(account: WalletConnectAccount): void }) {
-  const { channel, location, account, connect } = props
+export function AccountCard(props: { channel: Channel } & { account: WalletConnectAccount } & { connect(account: WalletConnectAccount): void }) {
+  const { channel, account, connect } = props
 
   const onClick = useCallback(() => {
     connect(account)
@@ -598,8 +598,8 @@ export function AccountCard(props: { channel: Channel } & { location: URL } & { 
 
   const onDelete = useCallback((event: MouseEvent) => Promise.try(async () => {
     event.stopPropagation()
-    await channel.request(new RpcRequest(crypto.randomUUID(), "wc_delete", [location, account]))
-  }).catch(Errors.display), [channel, location, account])
+    await channel.request(new RpcRequest(crypto.randomUUID(), "wc_delete", [account]))
+  }).catch(Errors.display), [channel, account])
 
   return <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
   data-[color=red]:bg-red-400 
