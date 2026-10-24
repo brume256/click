@@ -13,4 +13,4 @@ Coming soon.
 
 ### Self-install
 
-Just [download the .zip](./releases) and extract it, then go to Chrome "extensions" page, enable "Developer mode" and load the folder.
+Just [download the .zip](../../releases) and extract it, then go to Chrome "extensions" page, enable "Developer mode" and load the folder.
