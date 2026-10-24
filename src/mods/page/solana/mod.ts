@@ -205,12 +205,7 @@ declare global {
 
 export namespace wallet {
 
-  export const provider = new Proxy(new SolanaProvider(), {
-    get(target, prop) {
-      console.log("Accessing property:", prop)
-      return Reflect.get(target, prop)
-    }
-  })
+  export const provider = new SolanaProvider()
 
   window.solana = provider
 
