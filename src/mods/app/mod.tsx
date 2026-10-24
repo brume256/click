@@ -559,11 +559,11 @@ export function App(props: { channel: Channel } & { location: URL }) {
       in-dark:data-[color=fuchsia]:bg-fuchsia-500
       in-dark:data-[color=pink]:bg-pink-500
       in-dark:data-[color=rose]:bg-rose-500"
-        data-theme={accounts.find(x => x.address.eip155 === account.address.eip155)?.color == null ? "opposite" : "dark"}
-        data-color={accounts.find(x => x.address.eip155 === account.address.eip155)?.color}
+        data-theme={accounts.find(x => x.uuid === account.uuid)?.color == null ? "opposite" : "dark"}
+        data-color={accounts.find(x => x.uuid === account.uuid)?.color}
         onClick={onDisconnect}>
         <div className="font-medium text-lg">
-          {accounts.find(x => x.address.eip155 === account.address.eip155)?.title}
+          {accounts.find(x => x.uuid === account.uuid)?.title}
         </div>
         <div className="grow" />
         <div className="bg-default-contrast rounded-xl po-1 flex items-center gap-2">
@@ -575,7 +575,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     <div className="h-4 grow shrink-0" />
     <div className="mt-28 w-full flex flex-col items-center isolate">
       {accounts.map(x =>
-        <Fragment key={x.address.eip155}>
+        <Fragment key={x.uuid}>
           <AccountCard channel={channel} location={location} account={x} connect={onConnect} />
         </Fragment>)}
       <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"

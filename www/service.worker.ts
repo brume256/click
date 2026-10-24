@@ -52,19 +52,19 @@ chrome.runtime.onConnect.addListener((port) => {
       return "0x1"
 
     if (request.method === "eth_accounts") {
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session != null)
-        return [session.account.address.eip155]
+      if (current == null)
+        return []
 
-      return []
+      return [current.account.address.eip155]
     }
 
     if (request.method === "eth_requestAccounts") {
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session != null)
-        return [session.account.address.eip155]
+      if (current != null)
+        return [current.account.address.eip155]
 
       const previous = requests.get(origin)
 
@@ -73,61 +73,61 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const current = Promise.withResolvers<WalletConnectSession>()
+      const future = Promise.withResolvers<WalletConnectSession>()
 
-      requests.set(origin, current)
+      requests.set(origin, future)
       stack.defer(() => requests.delete(origin))
 
-      chrome.sidePanel.onClosed.addListener(current.reject)
-      stack.defer(() => chrome.sidePanel.onClosed.removeListener(current.reject))
+      chrome.sidePanel.onClosed.addListener(future.reject)
+      stack.defer(() => chrome.sidePanel.onClosed.removeListener(future.reject))
 
       await chrome.sidePanel.open({ windowId })
 
-      const session2 = await current.promise
+      const session = await future.promise
 
-      return [session2.account.address.eip155]
+      return [session.account.address.eip155]
     }
 
     if (request.method === "personal_sign") {
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session == null)
+      if (current == null)
         throw new RpcInvalidRequestError()
 
       const request = { method, params }
 
-      return await session.session.request({ chainId: "eip155:1", request })
+      return await current.session.request({ chainId: "eip155:1", request })
     }
 
     if (request.method === "eth_sendTransaction") {
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session == null)
+      if (current == null)
         throw new RpcInvalidRequestError()
 
       const request = { method, params }
 
-      return await session.session.request({ chainId: "eip155:1", request })
+      return await current.session.request({ chainId: "eip155:1", request })
     }
 
     if (request.method === "eth_signTypedData_v4") {
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session == null)
+      if (current == null)
         throw new RpcInvalidRequestError()
 
       const request = { method, params }
 
-      return await session.session.request({ chainId: "eip155:1", request })
+      return await current.session.request({ chainId: "eip155:1", request })
     }
 
     if (request.method === "solana_connect") {
       const { onlyIfTrusted } = params as { onlyIfTrusted?: boolean }
 
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session != null)
-        return [session.account.address.solana]
+      if (current != null)
+        return [current.account.address.solana]
       if (onlyIfTrusted)
         throw new WcUserRejectedRequestError()
 
@@ -138,41 +138,41 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const current = Promise.withResolvers<WalletConnectSession>()
+      const future = Promise.withResolvers<WalletConnectSession>()
 
-      requests.set(origin, current)
+      requests.set(origin, future)
       stack.defer(() => requests.delete(origin))
 
-      chrome.sidePanel.onClosed.addListener(current.reject)
-      stack.defer(() => chrome.sidePanel.onClosed.removeListener(current.reject))
+      chrome.sidePanel.onClosed.addListener(future.reject)
+      stack.defer(() => chrome.sidePanel.onClosed.removeListener(future.reject))
 
       await chrome.sidePanel.open({ windowId })
 
-      const session2 = await current.promise
+      const session = await future.promise
 
-      return [session2.account.address.solana]
+      return [session.account.address.solana]
     }
 
     if (request.method === "solana_signMessage") {
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session == null)
+      if (current == null)
         throw new RpcInvalidRequestError()
 
       const request = { method, params }
 
-      return await session.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
+      return await current.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
     }
 
     if (request.method === "solana_signTransaction") {
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session == null)
+      if (current == null)
         throw new RpcInvalidRequestError()
 
       const request = { method, params }
 
-      return await session.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
+      return await current.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
     }
 
     throw new RpcMethodNotFoundError()
@@ -365,12 +365,12 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session == null)
+      if (current == null)
         return
 
-      return session.account
+      return current.account
     }
 
     if (request.method === "wc_connect") {
@@ -412,6 +412,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       stack.defer(async () => success ? undefined : await session.close())
 
+      await sessions.get(origin)?.session.close()
+
       sessions.set(origin, { account, session })
 
       for (const channel of channels) {
@@ -438,12 +440,12 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session == null)
+      if (current == null)
         throw new RpcInvalidRequestError()
 
-      await session.session.close()
+      await current.session.close()
 
       sessions.delete(origin)
 
@@ -467,9 +469,9 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      const session = sessions.get(origin)
+      const current = sessions.get(origin)
 
-      if (session != null)
+      if (current != null)
         throw new RpcInvalidRequestError()
 
       const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
