@@ -521,9 +521,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
         </PathWindow>}
     </SubpathProvider>
     {!account && <Fragment>
-      <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto animate-opacity-in">
-        Choose an account
-      </div>
+      <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto animate-opacity-in" />
     </Fragment>}
     {account && <Fragment key={account.address.eip155}>
       <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 transition-transform
