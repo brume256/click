@@ -11,7 +11,7 @@ import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@haz
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
-import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import React, { Fragment, MouseEvent, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 
 React;
 
@@ -577,7 +577,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     <div className="mt-28 w-full flex flex-col items-center isolate">
       {accounts.map(x =>
         <Fragment key={x.address.eip155}>
-          <AccountCard account={x} connect={onConnect} />
+          <AccountCard channel={channel} location={location} account={x} connect={onConnect} />
         </Fragment>)}
       <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
         style={{ zIndex: accounts.length }}
@@ -590,14 +590,19 @@ export function App(props: { channel: Channel } & { location: URL }) {
   </div>
 }
 
-export function AccountCard(props: { account: WalletConnectAccount } & { connect(account: WalletConnectAccount): void }) {
-  const { account, connect } = props
+export function AccountCard(props: { channel: Channel } & { location: URL } & { account: WalletConnectAccount } & { connect(account: WalletConnectAccount): void }) {
+  const { channel, location, account, connect } = props
 
   const onClick = useCallback(() => {
     connect(account)
   }, [connect, account])
 
-  return <button type="button" className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
+  const onDelete = useCallback(async (event: MouseEvent) => {
+    event.stopPropagation()
+    await channel.request(new RpcRequest(crypto.randomUUID(), "wc_delete", [location, account]))
+  }, [channel, location, account])
+
+  return <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
   data-[color=red]:bg-red-400 
   data-[color=orange]:bg-orange-400 
   data-[color=amber]:bg-amber-400 
@@ -640,10 +645,14 @@ export function AccountCard(props: { account: WalletConnectAccount } & { connect
         {account.title}
       </div>
       <div className="w-4 grow" />
-      <button type="button">
-        <Outline.EllipsisVerticalIcon className="size-5" />
+      <button className="group rounded-full cursor-pointer p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+        type="button"
+        onClick={onDelete}>
+        <InButton>
+          <Outline.TrashIcon className="size-5" />
+        </InButton>
       </button>
     </div>
-  </button>
+  </div>
 }
 

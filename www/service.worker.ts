@@ -430,7 +430,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       success = true
 
-      return true
+      return
     }
 
     if (request.method === "wc_disconnect") {
@@ -441,7 +441,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const session = sessions.get(origin)
 
       if (session == null)
-        return false
+        throw new RpcInvalidRequestError()
 
       await session.session.close()
 
@@ -459,7 +459,28 @@ chrome.runtime.onConnect.addListener((port) => {
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", []))
 
-      return true
+      return
+    }
+
+    if (request.method === "wc_delete") {
+      const [location, account] = request.params as [string, WalletConnectAccount]
+
+      const { origin } = new URL(location)
+
+      const session = sessions.get(origin)
+
+      if (session != null)
+        throw new RpcInvalidRequestError()
+
+      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
+
+      accounts.splice(accounts.findIndex(x => x.uuid === account.uuid), 1)
+
+      await chrome.storage.local.set({ accounts })
+
+      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountsChanged", accounts))
+
+      return
     }
 
     throw new RpcMethodNotFoundError()
