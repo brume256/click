@@ -8,6 +8,7 @@ import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
+import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit, RpcRequest } from "@hazae41/jsonrpc";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
@@ -79,119 +80,7 @@ export function useLocation(channel: Channel) {
   }, [location])
 }
 
-export function ColorAnchor(props: { color?: Nullable<string> }) {
-  const { color } = props
-
-  const path = usePathContext().getOrThrow()
-  const hash = useHashSubpath(path)
-
-  const coords = useAnchorWithCoords(hash, "/color")
-
-  return <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-    href={coords.url.hash}
-    onClick={coords.onClick}
-    onKeyDown={coords.onKeyDown}>
-    <InOther>
-      <div className="size-5 rounded-full bg-opposite
-        data-[color=red]:bg-red-400 
-        data-[color=orange]:bg-orange-400 
-        data-[color=amber]:bg-amber-400 
-        data-[color=yellow]:bg-yellow-400 
-        data-[color=lime]:bg-lime-400 
-        data-[color=green]:bg-green-400 
-        data-[color=emerald]:bg-emerald-400 
-        data-[color=teal]:bg-teal-400 
-        data-[color=cyan]:bg-cyan-400 
-        data-[color=sky]:bg-sky-400 
-        data-[color=blue]:bg-blue-400 
-        data-[color=indigo]:bg-indigo-400 
-        data-[color=violet]:bg-violet-400 
-        data-[color=purple]:bg-purple-400 
-        data-[color=fuchsia]:bg-fuchsia-400 
-        data-[color=pink]:bg-pink-400 
-        data-[color=rose]:bg-rose-400 
-        in-dark:data-[color=red]:bg-red-500
-        in-dark:data-[color=orange]:bg-orange-500
-        in-dark:data-[color=amber]:bg-amber-500
-        in-dark:data-[color=yellow]:bg-yellow-500
-        in-dark:data-[color=lime]:bg-lime-500
-        in-dark:data-[color=green]:bg-green-500
-        in-dark:data-[color=emerald]:bg-emerald-500
-        in-dark:data-[color=teal]:bg-teal-500
-        in-dark:data-[color=cyan]:bg-cyan-500
-        in-dark:data-[color=sky]:bg-sky-500
-        in-dark:data-[color=blue]:bg-blue-500
-        in-dark:data-[color=indigo]:bg-indigo-500
-        in-dark:data-[color=violet]:bg-violet-500
-        in-dark:data-[color=purple]:bg-purple-500
-        in-dark:data-[color=fuchsia]:bg-fuchsia-500
-        in-dark:data-[color=pink]:bg-pink-500
-        in-dark:data-[color=rose]:bg-rose-500"
-        data-color={color} />
-    </InOther>
-  </a>
-}
-
-export function ColorMenu(props: { ok(color: Nullable<string>): void }) {
-  const { ok } = props
-
-  return <div className="grid grid-cols-6 grid-auto-rows gap-2">
-    <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-      onClick={() => ok(null)}
-      type="button">
-      <InButton>
-        <div className="size-5 rounded-full bg-opposite" />
-      </InButton>
-    </button>
-    {["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"].map(color =>
-      <Fragment key={color}>
-        <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-          onClick={() => ok(color)}
-          type="button">
-          <InButton>
-            <div className="size-5 rounded-full
-              data-[color=red]:bg-red-400 
-              data-[color=orange]:bg-orange-400 
-              data-[color=amber]:bg-amber-400 
-              data-[color=yellow]:bg-yellow-400 
-              data-[color=lime]:bg-lime-400 
-              data-[color=green]:bg-green-400 
-              data-[color=emerald]:bg-emerald-400 
-              data-[color=teal]:bg-teal-400 
-              data-[color=cyan]:bg-cyan-400 
-              data-[color=sky]:bg-sky-400 
-              data-[color=blue]:bg-blue-400 
-              data-[color=indigo]:bg-indigo-400 
-              data-[color=violet]:bg-violet-400 
-              data-[color=purple]:bg-purple-400 
-              data-[color=fuchsia]:bg-fuchsia-400 
-              data-[color=pink]:bg-pink-400 
-              data-[color=rose]:bg-rose-400 
-              in-dark:data-[color=red]:bg-red-500
-              in-dark:data-[color=orange]:bg-orange-500
-              in-dark:data-[color=amber]:bg-amber-500
-              in-dark:data-[color=yellow]:bg-yellow-500
-              in-dark:data-[color=lime]:bg-lime-500
-              in-dark:data-[color=green]:bg-green-500
-              in-dark:data-[color=emerald]:bg-emerald-500
-              in-dark:data-[color=teal]:bg-teal-500
-              in-dark:data-[color=cyan]:bg-cyan-500
-              in-dark:data-[color=sky]:bg-sky-500
-              in-dark:data-[color=blue]:bg-blue-500
-              in-dark:data-[color=indigo]:bg-indigo-500
-              in-dark:data-[color=violet]:bg-violet-500
-              in-dark:data-[color=purple]:bg-purple-500
-              in-dark:data-[color=fuchsia]:bg-fuchsia-500
-              in-dark:data-[color=pink]:bg-pink-500
-              in-dark:data-[color=rose]:bg-rose-500"
-              data-color={color} />
-          </InButton>
-        </button>
-      </Fragment>)}
-  </div>
-}
-
-export function Connect(props: { channel: Channel } & { title: string } & { color: Nullable<string> } & { close(): void }) {
+export function ConnectPrompt(props: { channel: Channel } & { title: string } & { color: Nullable<string> } & { close(): void }) {
   const { channel, title, color, close: close1 } = props
 
   const close0 = useCloseContext().getOrThrow()
@@ -298,7 +187,7 @@ export function Connect(props: { channel: Channel } & { title: string } & { colo
   </div>
 }
 
-export function Create(props: { channel: Channel }) {
+export function CreateWindow(props: { channel: Channel }) {
   const { channel } = props
 
   const close = useCloseContext().getOrThrow()
@@ -318,11 +207,11 @@ export function Create(props: { channel: Channel }) {
     <SubpathProvider value={hash}>
       {hash.url.pathname === "/color" &&
         <PathBubble>
-          <ColorMenu ok={setColor} />
+          <ColorBubble ok={setColor} />
         </PathBubble>}
       {hash.url.pathname === "/connect" &&
         <PathPrompt>
-          <Connect
+          <ConnectPrompt
             channel={channel}
             title={title}
             color={color}
@@ -480,7 +369,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     <SubpathProvider value={path}>
       {path.url.pathname === "/create" &&
         <PathWindow>
-          <Create channel={channel} />
+          <CreateWindow channel={channel} />
         </PathWindow>}
     </SubpathProvider>
     {!account && <Fragment>
