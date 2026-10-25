@@ -5,7 +5,7 @@ export interface Addresses {
   readonly solana: string
 }
 
-export interface WalletConnectAccount {
+export interface WcAccount {
   readonly uuid: string
   readonly type: "walletconnect"
 

@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 
-import { WalletConnectAccount } from "@/libs/account/mod.ts";
+import { WcAccount } from "@/libs/account/mod.ts";
 import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
 import { InButton } from "@/libs/button/mod.tsx";
 import { Channel } from "@/libs/channel/mod.ts";
@@ -312,7 +312,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
 
   const create = useAnchorWithCoords(path, "/create")
 
-  const [account, setAccount] = useState<WalletConnectAccount>()
+  const [account, setAccount] = useState<WcAccount>()
 
   const onMessage = useCallback((message: RpcMessageInit) => {
     if ("method" in message === false)
@@ -321,7 +321,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     const request = RpcRequest.from(message)
 
     if (request.method === "wc_accountChanged") {
-      const [account] = request.params as [WalletConnectAccount]
+      const [account] = request.params as [WcAccount]
 
       setAccount(account)
 
@@ -329,7 +329,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     }
 
     if (request.method === "wc_accountsChanged") {
-      const accounts = request.params as WalletConnectAccount[]
+      const accounts = request.params as WcAccount[]
 
       setAccounts(accounts)
 
@@ -345,10 +345,10 @@ export function App(props: { channel: Channel } & { location: URL }) {
   }, [channel, onMessage])
 
   useEffect(() => {
-    channel.request<WalletConnectAccount>({ method: "wc_account", params: [location] }).then(setAccount)
+    channel.request<WcAccount>({ method: "wc_account", params: [location] }).then(setAccount)
   }, [channel, location])
 
-  const onConnect = useCallback((account: WalletConnectAccount) => Promise.try(async () => {
+  const onConnect = useCallback((account: WcAccount) => Promise.try(async () => {
     await channel.request({ method: "wc_connect", params: [location, account] })
   }).catch(Errors.display), [channel, location])
 
@@ -356,10 +356,10 @@ export function App(props: { channel: Channel } & { location: URL }) {
     await channel.request({ method: "wc_disconnect", params: [location] })
   }).catch(Errors.display), [channel, location])
 
-  const [accounts, setAccounts] = useState<WalletConnectAccount[]>([])
+  const [accounts, setAccounts] = useState<WcAccount[]>([])
 
   useEffect(() => {
-    channel.request<WalletConnectAccount[]>({ method: "wc_accounts", params: [location] }).then(setAccounts)
+    channel.request<WcAccount[]>({ method: "wc_accounts", params: [location] }).then(setAccounts)
   }, [channel, location])
 
   if (location == null)
@@ -441,7 +441,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
   </div>
 }
 
-export function AccountCard(props: { channel: Channel } & { account: WalletConnectAccount } & { connect(account: WalletConnectAccount): void }) {
+export function AccountCard(props: { channel: Channel } & { account: WcAccount } & { connect(account: WcAccount): void }) {
   const { channel, account, connect } = props
 
   const onClick = useCallback(() => {

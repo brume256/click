@@ -1,15 +1,44 @@
 /// <reference types="chrome" />
-// deno-lint-ignore-file no-unused-vars
 
-import { WalletConnectAccount } from "@/libs/account/mod.ts";
+import { WcAccount } from "@/libs/account/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
 import { RpcErr, RpcError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
 import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams, WcUserRejectedRequestError } from "@hazae41/latrine";
 
-const sessions = new Map<string, WcSession>()
+class WcCounter {
 
-const currents = new Map<string, WalletConnectAccount>()
-const requests = new Map<string, PromiseWithResolvers<WalletConnectAccount>>()
+  #count = 0
+
+  constructor(
+    readonly account: WcAccount,
+    readonly session: WcSession
+  ) { }
+
+  borrow() {
+    this.#count++
+  }
+
+  async release() {
+    this.#count--
+
+    if (this.#count > 0)
+      return
+
+    await this.session.close()
+
+    this.session.channel.client.close()
+
+    counters.delete(this.account.uuid)
+
+    return
+  }
+
+}
+
+const counters = new Map<string, WcCounter>()
+
+const currents = new Map<string, WcCounter>()
+const requests = new Map<string, PromiseWithResolvers<WcCounter>>()
 
 const aborters = new Map<chrome.runtime.Port, AbortController>()
 const channels = new Map<chrome.runtime.Port, string>()
@@ -55,14 +84,14 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         return []
 
-      return [current.address.eip155]
+      return [current.account.address.eip155]
     }
 
     if (request.method === "eth_requestAccounts") {
       const current = currents.get(origin)
 
       if (current != null)
-        return [current.address.eip155]
+        return [current.account.address.eip155]
 
       const previous = requests.get(origin)
 
@@ -71,7 +100,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const future = Promise.withResolvers<WalletConnectAccount>()
+      const future = Promise.withResolvers<WcCounter>()
 
       requests.set(origin, future)
       stack.defer(() => requests.delete(origin))
@@ -81,9 +110,9 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await chrome.sidePanel.open({ windowId })
 
-      const account = await future.promise
+      const resolved = await future.promise
 
-      return [account.address.eip155]
+      return [resolved.account.address.eip155]
     }
 
     if (request.method === "personal_sign") {
@@ -92,12 +121,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      const session = sessions.get(current.uuid)
-
-      if (session == null)
-        throw new RpcInvalidRequestError()
-
-      return await session.request({ chainId: "eip155:1", request: { method, params } })
+      return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
     if (request.method === "eth_sendTransaction") {
@@ -106,12 +130,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      const session = sessions.get(current.uuid)
-
-      if (session == null)
-        throw new RpcInvalidRequestError()
-
-      return await session.request({ chainId: "eip155:1", request: { method, params } })
+      return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
     if (request.method === "eth_signTypedData_v4") {
@@ -120,12 +139,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      const session = sessions.get(current.uuid)
-
-      if (session == null)
-        throw new RpcInvalidRequestError()
-
-      return await session.request({ chainId: "eip155:1", request: { method, params } })
+      return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
     if (request.method === "solana_connect") {
@@ -134,7 +148,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const current = currents.get(origin)
 
       if (current != null)
-        return [current.address.solana]
+        return [current.account.address.solana]
       if (onlyIfTrusted)
         throw new WcUserRejectedRequestError()
 
@@ -145,7 +159,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       using stack = new DisposableStack()
 
-      const future = Promise.withResolvers<WalletConnectAccount>()
+      const future = Promise.withResolvers<WcCounter>()
 
       requests.set(origin, future)
       stack.defer(() => requests.delete(origin))
@@ -155,9 +169,9 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await chrome.sidePanel.open({ windowId })
 
-      const account = await future.promise
+      const resolved = await future.promise
 
-      return [account.address.solana]
+      return [resolved.account.address.solana]
     }
 
     if (request.method === "solana_signMessage") {
@@ -166,12 +180,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      const session = sessions.get(current.uuid)
-
-      if (session == null)
-        throw new RpcInvalidRequestError()
-
-      return await session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request: { method, params } })
+      return await current.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request: { method, params } })
     }
 
     if (request.method === "solana_signTransaction") {
@@ -180,12 +189,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      const session = sessions.get(current.uuid)
-
-      if (session == null)
-        throw new RpcInvalidRequestError()
-
-      return await session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request: { method, params } })
+      return await current.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request: { method, params } })
     }
 
     throw new RpcMethodNotFoundError()
@@ -203,7 +207,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (request.method !== "ping")
         console.debug("<-", response)
 
-      port.postMessage(response)
+      Promise.try(() => port.postMessage(response)).catch(() => { })
 
       return
     } catch (error: unknown) {
@@ -215,7 +219,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       console.debug("<-", response)
 
-      port.postMessage(response)
+      Promise.try(() => port.postMessage(response)).catch(() => { })
 
       return
     }
@@ -341,7 +345,7 @@ chrome.runtime.onConnect.addListener((port) => {
       const tpc = session.channel.topic
       const key = session.channel.key.toBase64()
 
-      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
+      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
 
       const { eip155, solana } = namespaces as { eip155: { accounts: string[] }, solana: { accounts: string[] } }
 
@@ -368,22 +372,18 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "wc_accounts") {
       const _ = request.params
 
-      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
+      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
 
       return accounts
     }
 
     if (request.method === "wc_delete") {
-      const [account] = request.params as [WalletConnectAccount]
+      const [account] = request.params as [WcAccount]
 
-      for (const [origin, account] of currents) {
-        if (account.uuid === account.uuid)
-          throw new RpcInvalidRequestError()
-        else
-          continue
-      }
+      if (counters.has(account.uuid))
+        throw new RpcInvalidRequestError()
 
-      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WalletConnectAccount[] }>("accounts")
+      const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
 
       accounts.splice(accounts.findIndex(x => x.uuid === account.uuid), 1)
 
@@ -404,17 +404,22 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         return
 
-      return current
+      return current.account
     }
 
     if (request.method === "wc_connect") {
-      const [location, account] = request.params as [string, WalletConnectAccount]
+      const [location, account] = request.params as [string, WcAccount]
 
       const { origin } = new URL(location)
 
-      const session = sessions.get(account.uuid)
+      const current = currents.get(origin)
 
-      if (session == null) {
+      if (current != null)
+        throw new RpcInvalidRequestError()
+
+      let counter = counters.get(account.uuid)
+
+      if (counter == null) {
         await using stack = new AsyncDisposableStack()
 
         let success = false
@@ -447,12 +452,15 @@ chrome.runtime.onConnect.addListener((port) => {
 
         await session.open()
 
-        sessions.set(account.uuid, session)
-
         success = true
+
+        counter = new WcCounter(account, session)
+        counters.set(account.uuid, counter)
       }
 
-      currents.set(origin, account)
+      counter.borrow()
+
+      currents.set(origin, counter)
 
       for (const channel of channels) {
         const [port, origin2] = channel
@@ -466,7 +474,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", [account]))
 
-      requests.get(origin)?.resolve(account)
+      requests.get(origin)?.resolve(counter)
 
       return
     }
@@ -480,6 +488,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       if (current == null)
         throw new RpcInvalidRequestError()
+
+      await current.release()
 
       currents.delete(origin)
 
@@ -513,7 +523,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (request.method !== "ping")
         console.debug("<-", response)
 
-      port.postMessage(response)
+      Promise.try(() => port.postMessage(response)).catch(() => { })
 
       return
     } catch (error: unknown) {
@@ -525,7 +535,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       console.debug("<-", response)
 
-      port.postMessage(response)
+      Promise.try(() => port.postMessage(response)).catch(() => { })
 
       return
     }
