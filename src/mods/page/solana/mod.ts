@@ -149,13 +149,13 @@ export class SolanaProvider extends EventEmitter {
     return
   }
 
-  async signMessage(_message: Uint8Array, display?: "utf8" | "hex") {
+  async signMessage(message: Uint8Array, display?: "utf8" | "hex") {
     const { publicKey } = this
 
-    const message = base58.encode(_message)
-    const pubkey = this.publicKey?.toString()
+    const message58 = base58.encode(message)
+    const pubkey58 = this.publicKey?.toString()
 
-    const params = { message, pubkey }
+    const params = { message: message58, pubkey: pubkey58 }
     const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
 
     const signature = base58.decode(result.signature)
