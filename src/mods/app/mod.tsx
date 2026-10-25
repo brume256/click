@@ -2,19 +2,20 @@
 
 import { WcAccount } from "@/libs/account/mod.ts";
 import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
-import { InButton } from "@/libs/button/mod.tsx";
+import { InButton, WideContrastButton, WideOppositeButton } from "@/libs/button/mod.tsx";
 import { Channel } from "@/libs/channel/mod.ts";
 import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
+import { Events } from "@/libs/events/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
-import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit, RpcRequest } from "@hazae41/jsonrpc";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
-import React, { Fragment, MouseEvent, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 
 React;
 
@@ -445,16 +446,25 @@ export function App(props: { channel: Channel } & { location: URL }) {
 export function AccountCard(props: { channel: Channel } & { account: WcAccount } & { connect(account: WcAccount): void }) {
   const { channel, account, connect } = props
 
+  const path = usePath()
+  const hash = useHashSubpath(path)
+
   const onClick = useCallback(() => {
     connect(account)
   }, [connect, account])
 
-  const onDelete = useCallback((event: MouseEvent) => Promise.try(async () => {
-    event.stopPropagation()
-    await channel.request(new RpcRequest(crypto.randomUUID(), "wc_delete", [account]))
-  }).catch(Errors.display), [channel, account])
+  const remove = useAnchorWithCoords(hash, `/${account.uuid}/delete`)
 
-  return <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
+  return <Fragment>
+    <SubpathProvider value={hash}>
+      {hash.url.pathname === `/${account.uuid}/delete` &&
+        <PathPrompt>
+          <DeletePrompt
+            channel={channel}
+            account={account} />
+        </PathPrompt>}
+    </SubpathProvider>
+    <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
   data-[color=red]:bg-red-400 
   data-[color=orange]:bg-orange-400 
   data-[color=amber]:bg-amber-400 
@@ -489,22 +499,60 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
   in-dark:data-[color=fuchsia]:bg-fuchsia-500
   in-dark:data-[color=pink]:bg-pink-500
   in-dark:data-[color=rose]:bg-rose-500"
-    data-theme={account.color == null ? "opposite" : "dark"}
-    data-color={account.color}
-    onClick={onClick}>
-    <div className="w-full flex items-center">
-      <div className="font-medium text-lg">
-        {account.title}
+      data-theme={account.color == null ? "opposite" : "dark"}
+      data-color={account.color}
+      onClick={onClick}>
+      <div className="w-full flex items-center">
+        <div className="font-medium text-lg">
+          {account.title}
+        </div>
+        <div className="w-4 grow" />
+        <div className="flex items-center gap-2"
+          onClick={Events.stopPropagation}>
+          <a className="group rounded-full cursor-pointer p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
+            onKeyDown={remove.onKeyDown}
+            onClick={remove.onClick}
+            href={remove.url.hash}>
+            <InButton>
+              <Outline.TrashIcon className="size-5" />
+            </InButton>
+          </a>
+        </div>
       </div>
-      <div className="w-4 grow" />
-      <button className="group rounded-full cursor-pointer p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-        type="button"
+    </div>
+  </Fragment>
+}
+
+export function DeletePrompt(props: { channel: Channel } & { account: WcAccount }) {
+  const { channel, account } = props
+
+  const close = useCloseContext().getOrThrow()
+
+  const onClose = useCallback(() => {
+    close()
+  }, [close])
+
+  const onDelete = useCallback(() => Promise.try(async () => {
+    await channel.request(new RpcRequest(crypto.randomUUID(), "wc_delete", [account]))
+  }).catch(Errors.display), [channel, account])
+
+  return <div className="flex flex-col grow p-6 text-base">
+    <div className="font-medium">
+      Delete
+    </div>
+    <div className="text-default-contrast">
+      Are you sure you want to delete this account?
+    </div>
+    <div className="h-4" />
+    <div className="flex items-center flex-wrap-reverse gap-2">
+      <WideContrastButton
+        onClick={onClose}>
+        Cancel
+      </WideContrastButton>
+      <WideOppositeButton
         onClick={onDelete}>
-        <InButton>
-          <Outline.TrashIcon className="size-5" />
-        </InButton>
-      </button>
+        Delete
+      </WideOppositeButton>
     </div>
   </div>
 }
-
