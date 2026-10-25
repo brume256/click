@@ -30,11 +30,16 @@ declare global {
 export namespace pipe {
 
   export async function request<T>(init: RpcRequestPreinit) {
+    using stack = new DisposableStack()
+
     const { method, params } = init
 
     const request = new RpcRequest(crypto.randomUUID(), method, params)
 
-    const { promise, resolve } = Promise.withResolvers<RpcResponse>()
+    const { promise, resolve, reject } = Promise.withResolvers<RpcResponse>()
+
+    stack.defer(() => reject())
+    promise.catch(() => { })
 
     const onRespond = (event: CustomEvent<RpcResponseInit>) => {
       const response = RpcResponse.from(event.detail)
@@ -46,12 +51,11 @@ export namespace pipe {
     }
 
     addEventListener("pipe:respond", onRespond, { passive: true })
+    stack.defer(() => removeEventListener("pipe:respond", onRespond))
 
     dispatchEvent(new CustomEvent("pipe:request", { detail: request }))
 
     const response = await promise
-
-    removeEventListener("pipe:respond", onRespond)
 
     return response.getOrThrow() as T
   }

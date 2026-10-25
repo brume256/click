@@ -3,12 +3,13 @@
 import { WalletConnectAccount } from "@/libs/account/mod.ts";
 import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
 import { InButton } from "@/libs/button/mod.tsx";
+import { Channel } from "@/libs/channel/mod.ts";
 import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
-import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
+import { RpcMessageInit, RpcRequest } from "@hazae41/jsonrpc";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
@@ -38,44 +39,6 @@ export function useBackground() {
   }, [channel])
 
   return channel
-}
-
-export class Channel {
-
-  constructor(
-    readonly port: chrome.runtime.Port
-  ) { }
-
-  async request<T>(init: RpcRequestPreinit) {
-    const { method, params } = init
-
-    const request = new RpcRequest(crypto.randomUUID(), method, params)
-
-    const { promise, resolve } = Promise.withResolvers<RpcResponse>()
-
-    const onMessage = (message: RpcMessageInit) => {
-      if ("method" in message === true)
-        return
-
-      const response = RpcResponse.from(message)
-
-      if (response.id !== request.id)
-        return
-
-      resolve(response)
-    }
-
-    this.port.onMessage.addListener(onMessage)
-
-    this.port.postMessage(request)
-
-    const response = await promise
-
-    this.port.onMessage.removeListener(onMessage)
-
-    return response.getOrThrow() as T
-  }
-
 }
 
 export function useLocation(channel: Channel) {

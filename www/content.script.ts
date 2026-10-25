@@ -34,11 +34,16 @@ namespace backend {
   export const port = chrome.runtime.connect()
 
   export async function request<T>(init: RpcRequestPreinit) {
+    using stack = new DisposableStack()
+
     const { method, params } = init
 
     const request = new RpcRequest(crypto.randomUUID(), method, params)
 
-    const { promise, resolve } = Promise.withResolvers<RpcResponse>()
+    const { promise, resolve, reject } = Promise.withResolvers<RpcResponse>()
+
+    stack.defer(() => reject())
+    promise.catch(() => { })
 
     const onMessage = (message: RpcMessageInit) => {
       if ("method" in message === true)
@@ -53,12 +58,11 @@ namespace backend {
     }
 
     port.onMessage.addListener(onMessage)
+    stack.defer(() => port.onMessage.removeListener(onMessage))
 
     port.postMessage(request)
 
     const response = await promise
-
-    port.onMessage.removeListener(onMessage)
 
     return response.getOrThrow() as T
   }
