@@ -432,7 +432,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
         <Fragment key={x.uuid}>
           <AccountCard channel={channel} account={x} connect={onConnect} />
         </Fragment>)}
-      <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:translate-x-3 transition-transform"
+      <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:scale-105 transition-transform"
         style={{ zIndex: accounts.length }}
         onKeyDown={create.onKeyDown}
         onClick={create.onClick}
@@ -464,7 +464,7 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
             account={account} />
         </PathPrompt>}
     </SubpathProvider>
-    <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:translate-x-3 transition-transform
+    <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:scale-105 transition-transform
   data-[color=red]:bg-red-400 
   data-[color=orange]:bg-orange-400 
   data-[color=amber]:bg-amber-400 
