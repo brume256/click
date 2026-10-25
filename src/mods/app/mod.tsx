@@ -349,6 +349,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
   }, [channel, location])
 
   const onConnect = useCallback((account: WcAccount) => Promise.try(async () => {
+    await channel.request({ method: "wc_disconnect", params: [location] })
     await channel.request({ method: "wc_connect", params: [location, account] })
   }).catch(Errors.display), [channel, location])
 
@@ -373,7 +374,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
         </PathWindow>}
     </SubpathProvider>
     {!account && <Fragment>
-      <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto animate-opacity-in" />
+      <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto" />
     </Fragment>}
     {account && <Fragment key={account.address.eip155}>
       <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 transition-transform

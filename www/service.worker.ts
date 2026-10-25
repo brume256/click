@@ -484,12 +484,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { origin } = new URL(location)
 
-      const current = currents.get(origin)
-
-      if (current == null)
-        throw new RpcInvalidRequestError()
-
-      await current.release()
+      await currents.get(origin)?.release()
 
       currents.delete(origin)
 
