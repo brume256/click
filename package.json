@@ -42,6 +42,7 @@
     "@hazae41/visage": "^1.0.0",
     "@hazae41/webauthnstorage": "^1.1.0",
     "@heroicons/react": "2.2.0",
+    "bn.js": "^5.2.5",
     "buffer": "^6.0.3",
     "events": "^3.3.0",
     "jsqr": "1.4.0",

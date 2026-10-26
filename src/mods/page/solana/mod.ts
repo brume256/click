@@ -4,14 +4,15 @@ import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { pipe } from "@/mods/page/pipe/mod.ts";
 import { base58 } from "@hazae41/base58";
-import { RpcMethodNotFoundError, RpcRequestPreinit } from "@hazae41/jsonrpc";
+import { RpcInternalError } from "@hazae41/jsonrpc";
+import { BN } from "bn.js";
 import { Buffer } from "buffer";
 import { EventEmitter } from "events";
 
 declare global {
 
   export interface Window {
-    solana: SolanaProvider
+    solana: Provider
   }
 
 }
@@ -19,23 +20,33 @@ declare global {
 declare global {
 
   export interface Window {
-    phantom: { solana: SolanaProvider }
+    phantom: { solana: Provider }
   }
 
 }
 
-export interface SolanaAccount {
+export interface Account {
   readonly address: string
   readonly publicKey: Uint8Array
   readonly chains: string[]
   readonly features: string[]
 }
 
-export class SolanaPublicKey {
+export class PublicKey {
+
+  readonly #publicKeyAsBytes: Uint8Array
+  readonly #publicKeyAsBN: BN
 
   constructor(
     readonly publicKeyAsBase58: string
-  ) { }
+  ) {
+    this.#publicKeyAsBytes = base58.decode(this.publicKeyAsBase58)
+    this.#publicKeyAsBN = new BN(this.#publicKeyAsBytes)
+  }
+
+  get _bn() {
+    return this.#publicKeyAsBN
+  }
 
   toBase58() {
     return this.publicKeyAsBase58
@@ -50,7 +61,7 @@ export class SolanaPublicKey {
   }
 
   toBytes() {
-    return base58.decode(this.publicKeyAsBase58)
+    return this.#publicKeyAsBytes
   }
 
   toBuffer() {
@@ -58,19 +69,27 @@ export class SolanaPublicKey {
     return Buffer.from(buffer, byteOffset, byteLength)
   }
 
-  equals(other: SolanaPublicKey) {
+  equals(other: PublicKey) {
     return this.toString() === other.toString()
-  }
-
-  encode() {
-    throw new Error("Not implemented")
   }
 
 }
 
-export class SolanaProvider extends EventEmitter {
+export interface VersionedTransactionLike {
 
-  publicKey: Nullable<SolanaPublicKey> = null
+  readonly version: number
+
+  readonly signatures: Uint8Array[]
+
+  serialize(): Uint8Array
+
+  addSignature(publicKey: PublicKey, signature: Uint8Array): void
+
+}
+
+export class Provider extends EventEmitter {
+
+  publicKey: Nullable<PublicKey> = null
 
   constructor() {
     super()
@@ -81,7 +100,7 @@ export class SolanaProvider extends EventEmitter {
       if (request.method === "solana_connect") {
         const [address] = request.params as string[]
 
-        const publicKey = new SolanaPublicKey(address)
+        const publicKey = new PublicKey(address)
 
         this.publicKey = publicKey
 
@@ -112,29 +131,10 @@ export class SolanaProvider extends EventEmitter {
     return this.publicKey != null
   }
 
-  async request(init: RpcRequestPreinit<any>) {
-    const { method, params } = init
-
-    if (method === "connect")
-      return await this.connect(params)
-    if (method === "disconnect")
-      return await this.disconnect()
-
-    if (method === "signMessage") {
-      const { message, display } = params
-
-      const signature = await this.signMessage(message, display)
-
-      return signature
-    }
-
-    throw new RpcMethodNotFoundError()
-  }
-
-  async connect(params: { onlyIfTrusted?: boolean } = {}): Promise<{ publicKey: SolanaPublicKey }> {
+  async connect(params: { onlyIfTrusted?: boolean } = {}): Promise<{ publicKey: PublicKey }> {
     const [address] = await pipe.request<string[]>({ method: "solana_connect", params })
 
-    const publicKey = new SolanaPublicKey(address)
+    const publicKey = new PublicKey(address)
 
     this.publicKey = publicKey
 
@@ -149,8 +149,11 @@ export class SolanaProvider extends EventEmitter {
     return
   }
 
-  async signMessage(message: Uint8Array, display?: "utf8" | "hex") {
-    const { publicKey } = this
+  async signMessage(message: Uint8Array) {
+    if (this.publicKey == null)
+      await this.connect({ onlyIfTrusted: false })
+    if (this.publicKey == null)
+      throw new RpcInternalError()
 
     const message58 = base58.encode(message)
     const pubkey58 = this.publicKey?.toString()
@@ -160,11 +163,23 @@ export class SolanaProvider extends EventEmitter {
 
     const signature = base58.decode(result.signature)
 
-    return { signature, publicKey }
+    return { signature, publicKey: this.publicKey }
   }
 
-  async signTransaction(transaction: unknown) {
-    throw new Error("Not implemented")
+  async signTransaction(transaction: VersionedTransactionLike) {
+    if (this.publicKey == null)
+      await this.connect({ onlyIfTrusted: false })
+    if (this.publicKey == null)
+      throw new RpcInternalError()
+
+    const params = { transaction: transaction.serialize().toBase64() }
+    const result = await pipe.request<{ signature: string }>({ method: "solana_signTransaction", params })
+
+    const signature = base58.decode(result.signature)
+
+    transaction.addSignature(this.publicKey, signature)
+
+    return transaction
   }
 
 }
@@ -205,7 +220,7 @@ declare global {
 
 export namespace wallet {
 
-  export const provider = new SolanaProvider()
+  export const provider = new Provider()
 
   window.solana = provider
 
