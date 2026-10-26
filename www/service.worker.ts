@@ -174,6 +174,10 @@ chrome.runtime.onConnect.addListener((port) => {
       return [resolved.account.address.solana]
     }
 
+    if (request.method === "solana_disconnect") {
+      return port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_disconnect", undefined))
+    }
+
     if (request.method === "solana_signMessage") {
       const current = currents.get(origin)
 

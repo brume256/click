@@ -142,9 +142,9 @@ export class Provider extends EventEmitter {
   }
 
   async disconnect() {
-    this.publicKey = null
+    await pipe.request<string[]>({ method: "solana_disconnect" })
 
-    this.emit("disconnect")
+    this.publicKey = null
 
     return
   }
@@ -184,106 +184,140 @@ export class Provider extends EventEmitter {
 
 }
 
-export interface Wallet {
-  readonly version: string
+export interface WalletLike {
+  version: string
 
-  readonly name: string
-  readonly icon: string
+  name: string
+  icon: string
 
-  readonly chains: string[]
+  chains: string[]
 
-  readonly accounts: unknown[]
-  readonly features: Record<string, unknown>
+  accounts: unknown[]
+
+  features: Record<string, unknown>
 }
 
-export interface WalletAccount {
-  readonly address: string
+export class WalletAccount {
+
   readonly publicKey: Uint8Array
-  readonly chains: string[]
-  readonly features: string[]
-  readonly label?: string
-  readonly icon?: string
+
+  readonly chains = ["solana:mainnet", "solana:devnet"]
+  readonly features = ["solana:signMessage", "solana:signTransaction"]
+
+  constructor(
+    readonly address: string
+  ) {
+    this.publicKey = base58.decode(address)
+  }
+
 }
 
-export interface WalletApp {
-  register(wallet: Wallet): void
+export interface WalletAppLike {
+  register(wallet: WalletLike): void
 }
 
 declare global {
 
   export interface WindowEventMap {
-    "wallet-standard:app-ready": CustomEvent<WalletApp>
-    "wallet-standard:register-wallet": CustomEvent<(app: WalletApp) => void>
+    "wallet-standard:app-ready": CustomEvent<WalletAppLike>
+    "wallet-standard:register-wallet": CustomEvent<(app: WalletAppLike) => void>
   }
 
 }
 
-export namespace wallet {
+export const provider = new Provider()
 
-  export const provider = new Provider()
+window.solana = provider
 
-  window.solana = provider
+window.phantom = { solana: provider }
 
-  window.phantom = { solana: provider }
+export async function connect(props: { silent?: boolean } = {}) {
+  const { silent } = props
 
-  const dummy = {
-    address: "4kPAZS6jyqkotTAJB9eiPcLwhj483oQhVeMEaR7hamJS",
-    publicKey: Uint8Array.fromHex("37b018ef756c14309a2c1bee7f3584793f0e3ce17e6d092de57660bb6e188b0b"),
-    chains: ["solana:mainnet", "solana:devnet"],
-    features: ["solana:signMessage", "solana:signTransaction"],
-  }
+  const params = { onlyIfTrusted: silent }
+  const result = await pipe.request<string[]>({ method: "solana_connect", params })
 
-  export const wallet: Wallet = {
-    version: "1.0.0",
+  const accounts = result.map(address => new WalletAccount(address))
 
-    name: pipe.requestSync<string>({ method: "chrome_name" }),
-    icon: icon,
+  wallet.accounts = accounts
 
-    chains: ["solana:mainnet", "solana:devnet"],
+  return { accounts }
+}
 
-    accounts: [],
-    features: {
-      "standard:connect": {
-        version: "1.0.0",
-        connect: () => provider.connect()
+export async function disconnect() {
+  await pipe.request({ method: "solana_disconnect" })
+
+  wallet.accounts = []
+
+  return
+}
+
+export async function signMessage(props: { account: WalletAccount, message: Uint8Array }) {
+  const { account, message } = props
+
+  const message58 = base58.encode(message)
+  const pubkey58 = base58.encode(account.publicKey)
+
+  const params = { message: message58, pubkey: pubkey58 }
+  const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
+
+  const signature = base58.decode(result.signature)
+
+  // TODO fix
+
+  return { signature, signedMessage: message, signatureType: "ed25519" }
+}
+
+export async function signTransaction() {
+  throw new Error("Not implemented")
+}
+
+export const wallet: WalletLike = {
+  version: "1.0.0",
+
+  name: pipe.requestSync<string>({ method: "chrome_name" }),
+  icon: icon,
+
+  chains: ["solana:mainnet", "solana:devnet"],
+
+  accounts: [],
+
+  features: {
+    "standard:connect": {
+      version: "1.0.0",
+      connect
+    },
+    "standard:disconnect": {
+      version: "1.0.0",
+      disconnect
+    },
+    "standard:events": {
+      version: "1.0.0",
+      on: (name: string, listener: (...args: any[]) => void) => {
+        // TODO
+        provider.on(name, listener)
+        return () => provider.off(name, listener)
       },
-      "standard:disconnect": {
-        version: "1.0.0",
-        disconnect: () => provider.disconnect(),
-      },
-      "standard:events": {
-        version: "1.0.0",
-        on: (name: string, listener: (...args: any[]) => void) => {
-          provider.on(name, listener)
-          return () => provider.off(name, listener)
-        },
-      },
-      "solana:signMessage": {
-        version: "1.0.0",
-        signMessage: (params: { account: WalletAccount, message: Uint8Array }) => {
-          const { account, message } = params
-          throw new Error("Not implemented")
-        },
-      },
-      "solana:signTransaction": {
-        version: "1.0.0",
-        supportedTransactionVersions: ["legacy", 0, 1],
-        signTransaction: () => {
-          throw new Error("Not implemented")
-        },
-      }
+    },
+    "solana:signMessage": {
+      version: "1.0.0",
+      signMessage
+    },
+    "solana:signTransaction": {
+      version: "1.0.0",
+      supportedTransactionVersions: ["legacy", 0, 1],
+      signTransaction
     }
   }
-
-  export function announce() {
-    const detail = (app: WalletApp) => app.register(wallet)
-    dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
-  }
-
-  // addEventListener("wallet-standard:app-ready", (event) => {
-  //   event.detail.register(wallet)
-  // }, { passive: true })
-
-  // announce()
-
 }
+
+export function announce() {
+  const detail = (app: WalletAppLike) => app.register(wallet)
+  dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
+}
+
+addEventListener("wallet-standard:app-ready", (event) => {
+  event.detail.register(wallet)
+}, { passive: true })
+
+announce()
