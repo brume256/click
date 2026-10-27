@@ -11,7 +11,7 @@ The browser extension for one-click wallet login
 
 ### Chrome Web Store
 
-Coming soon.
+[Download](https://chromewebstore.google.com/detail/brume-click/kjlnlaliaghojddgclpnjelooempnkfm)
 
 ### Self-install
 
