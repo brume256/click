@@ -316,8 +316,8 @@ export function announce() {
   dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
 }
 
-addEventListener("wallet-standard:app-ready", (event) => {
-  event.detail.register(wallet)
-}, { passive: true })
+// addEventListener("wallet-standard:app-ready", (event) => {
+//   event.detail.register(wallet)
+// }, { passive: true })
 
-announce()
+// announce()
