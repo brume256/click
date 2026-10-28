@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Brume Click",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The browser extension for one-click wallet login",
   "icons": {
     "256": "/favicon.png"
