@@ -98,7 +98,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
-    if (request.method === "eth_sendTransaction") {
+    if (request.method === "eth_signTypedData_v4") {
       const _ = params
 
       if (current == null)
@@ -107,7 +107,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
-    if (request.method === "eth_signTypedData_v4") {
+    if (request.method === "eth_sendTransaction") {
       const _ = params
 
       if (current == null)

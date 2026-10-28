@@ -2,7 +2,7 @@
 
 /// <reference types="chrome" />
 
-import { RpcErr, RpcError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
+import { RpcErr, RpcError, RpcInvalidRequestError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
 declare global {
 
@@ -109,7 +109,33 @@ namespace frontend {
   }
 
   export async function route(request: RpcRequest) {
-    return await backend.request(request)
+    const { method } = request
+
+    if (method === "eth_chainId")
+      return await backend.request(request)
+    if (method === "eth_accounts")
+      return await backend.request(request)
+    if (method === "eth_requestAccounts")
+      return await backend.request(request)
+
+    if (method === "solana_connect")
+      return await backend.request(request)
+    if (method === "solana_disconnect")
+      return await backend.request(request)
+
+    if (method === "personal_sign" && navigator.userActivation.isActive && confirm(`I want to sign a message`))
+      return await backend.request(request)
+    if (method === "eth_signTypedData_v4" && navigator.userActivation.isActive && confirm(`I want to sign a message`))
+      return await backend.request(request)
+    if (method === "eth_sendTransaction" && navigator.userActivation.isActive && confirm(`I want to sign a transaction`))
+      return await backend.request(request)
+
+    if (method === "solana_signMessage" && navigator.userActivation.isActive && confirm(`I want to sign a message`))
+      return await backend.request(request)
+    if (method === "solana_signTransaction" && navigator.userActivation.isActive && confirm(`I want to sign a transaction`))
+      return await backend.request(request)
+
+    throw new RpcInvalidRequestError()
   }
 
   addEventListener("pipe:requestSync", (event) => {
