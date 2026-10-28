@@ -349,10 +349,14 @@ export function App(props: { channel: Channel } & { location: URL }) {
     channel.request<WcAccount>({ method: "wc_account", params: [] }).then(setAccount)
   }, [channel])
 
-  const onConnect = useCallback((account: WcAccount) => Promise.try(async () => {
+  const onConnect = useCallback((wanted: WcAccount) => Promise.try(async () => {
+    if (wanted.uuid === account?.uuid)
+      return
+
     await channel.request({ method: "wc_disconnect" })
-    await channel.request({ method: "wc_connect", params: [account] })
-  }).catch(Errors.display), [channel])
+
+    await channel.request({ method: "wc_connect", params: [wanted] })
+  }).catch(Errors.display), [channel, account])
 
   const onDisconnect = useCallback(() => Promise.try(async () => {
     await channel.request({ method: "wc_disconnect", params: [] })
