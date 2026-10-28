@@ -18,7 +18,6 @@ class WcAccountAndSession {
 let current: Nullable<WcAccountAndSession> = null
 let waiting: Nullable<PromiseWithResolvers<WcAccountAndSession>> = null
 
-const pending = new Map<chrome.runtime.Port, AbortController>()
 const origins = new Map<chrome.runtime.Port, string>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
@@ -223,6 +222,8 @@ chrome.runtime.onConnect.addListener((port) => {
   if (port.sender?.tab?.id != null)
     return
 
+  let proposal = new AbortController()
+
   const route = async (request: RpcRequest) => {
     if (request.method === "ping")
       return
@@ -244,7 +245,7 @@ chrome.runtime.onConnect.addListener((port) => {
       let success = false
 
       const aborter = new AbortController()
-      pending.set(port, aborter)
+      proposal = aborter
       const { signal } = aborter
 
       const cleaner = new AbortController()
@@ -338,7 +339,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "wc_abandon") {
       const _ = request.params
 
-      pending.get(port)?.abort()
+      proposal.abort()
 
       return
     }
