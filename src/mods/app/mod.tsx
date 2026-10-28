@@ -307,7 +307,7 @@ export function CreateWindow(props: { channel: Channel }) {
 }
 
 export function App(props: { channel: Channel } & { location: URL }) {
-  const { channel, location } = props
+  const { channel } = props
 
   const path = usePathContext().getOrThrow()
 
@@ -346,26 +346,23 @@ export function App(props: { channel: Channel } & { location: URL }) {
   }, [channel, onMessage])
 
   useEffect(() => {
-    channel.request<WcAccount>({ method: "wc_account", params: [location] }).then(setAccount)
-  }, [channel, location])
+    channel.request<WcAccount>({ method: "wc_account", params: [] }).then(setAccount)
+  }, [channel])
 
   const onConnect = useCallback((account: WcAccount) => Promise.try(async () => {
-    await channel.request({ method: "wc_disconnect", params: [location] })
-    await channel.request({ method: "wc_connect", params: [location, account] })
-  }).catch(Errors.display), [channel, location])
+    await channel.request({ method: "wc_disconnect" })
+    await channel.request({ method: "wc_connect", params: [account] })
+  }).catch(Errors.display), [channel])
 
   const onDisconnect = useCallback(() => Promise.try(async () => {
-    await channel.request({ method: "wc_disconnect", params: [location] })
-  }).catch(Errors.display), [channel, location])
+    await channel.request({ method: "wc_disconnect", params: [] })
+  }).catch(Errors.display), [channel])
 
   const [accounts, setAccounts] = useState<WcAccount[]>([])
 
   useEffect(() => {
-    channel.request<WcAccount[]>({ method: "wc_accounts", params: [location] }).then(setAccounts)
-  }, [channel, location])
-
-  if (location == null)
-    return null
+    channel.request<WcAccount[]>({ method: "wc_accounts", params: [] }).then(setAccounts)
+  }, [channel])
 
   return <div className="h-full w-full flex flex-col items-center p-8">
     <SubpathProvider value={path}>

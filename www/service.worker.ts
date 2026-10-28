@@ -2,46 +2,24 @@
 
 import { WcAccount } from "@/libs/account/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
+import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
 import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams, WcUserRejectedRequestError } from "@hazae41/latrine";
 
-class WcCounter {
-
-  #count = 0
+class WcAccountAndSession {
 
   constructor(
     readonly account: WcAccount,
     readonly session: WcSession
   ) { }
 
-  borrow() {
-    this.#count++
-  }
-
-  async release() {
-    this.#count--
-
-    if (this.#count > 0)
-      return
-
-    await this.session.close()
-
-    this.session.channel.client.close()
-
-    counters.delete(this.account.uuid)
-
-    return
-  }
-
 }
 
-const counters = new Map<string, WcCounter>()
+let current: Nullable<WcAccountAndSession> = null
+let waiting: Nullable<PromiseWithResolvers<WcAccountAndSession>> = null
 
-const currents = new Map<string, WcCounter>()
-const requests = new Map<string, PromiseWithResolvers<WcCounter>>()
-
-const aborters = new Map<chrome.runtime.Port, AbortController>()
-const channels = new Map<chrome.runtime.Port, string>()
+const pending = new Map<chrome.runtime.Port, AbortController>()
+const origins = new Map<chrome.runtime.Port, string>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
@@ -79,7 +57,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return "0x1"
 
     if (request.method === "eth_accounts") {
-      const current = currents.get(origin)
+      const _ = params
 
       if (current == null)
         return []
@@ -88,22 +66,19 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "eth_requestAccounts") {
-      const current = currents.get(origin)
+      const _ = params
 
       if (current != null)
         return [current.account.address.eip155]
-
-      const previous = requests.get(origin)
-
-      if (previous != null)
-        return await previous.promise
+      if (waiting != null)
+        return await waiting.promise
 
       using stack = new DisposableStack()
 
-      const future = Promise.withResolvers<WcCounter>()
+      const future = Promise.withResolvers<WcAccountAndSession>()
 
-      requests.set(origin, future)
-      stack.defer(() => requests.delete(origin))
+      waiting = future
+      stack.defer(() => waiting = null)
 
       chrome.sidePanel.onClosed.addListener(future.reject)
       stack.defer(() => chrome.sidePanel.onClosed.removeListener(future.reject))
@@ -116,7 +91,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "personal_sign") {
-      const current = currents.get(origin)
+      const _ = params
 
       if (current == null)
         throw new RpcInvalidRequestError()
@@ -125,7 +100,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "eth_sendTransaction") {
-      const current = currents.get(origin)
+      const _ = params
 
       if (current == null)
         throw new RpcInvalidRequestError()
@@ -134,7 +109,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "eth_signTypedData_v4") {
-      const current = currents.get(origin)
+      const _ = params
 
       if (current == null)
         throw new RpcInvalidRequestError()
@@ -145,24 +120,19 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "solana_connect") {
       const { onlyIfTrusted } = params as { onlyIfTrusted?: boolean }
 
-      const current = currents.get(origin)
-
       if (current != null)
         return [current.account.address.solana]
       if (onlyIfTrusted)
         throw new WcUserRejectedRequestError()
-
-      const previous = requests.get(origin)
-
-      if (previous != null)
-        return await previous.promise
+      if (waiting != null)
+        return await waiting.promise
 
       using stack = new DisposableStack()
 
-      const future = Promise.withResolvers<WcCounter>()
+      const future = Promise.withResolvers<WcAccountAndSession>()
 
-      requests.set(origin, future)
-      stack.defer(() => requests.delete(origin))
+      waiting = future
+      stack.defer(() => waiting = null)
 
       chrome.sidePanel.onClosed.addListener(future.reject)
       stack.defer(() => chrome.sidePanel.onClosed.removeListener(future.reject))
@@ -179,7 +149,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "solana_signMessage") {
-      const current = currents.get(origin)
+      const _ = params
 
       if (current == null)
         throw new RpcInvalidRequestError()
@@ -188,7 +158,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "solana_signTransaction") {
-      const current = currents.get(origin)
+      const _ = params
 
       if (current == null)
         throw new RpcInvalidRequestError()
@@ -237,8 +207,8 @@ chrome.runtime.onConnect.addListener((port) => {
   stack.defer(() => port.onMessage.removeListener(onMessage))
   stack.defer(() => port.onDisconnect.removeListener(onDisconnect))
 
-  channels.set(port, origin)
-  stack.defer(() => channels.delete(port))
+  origins.set(port, origin)
+  stack.defer(() => origins.delete(port))
 
   return
 })
@@ -274,7 +244,7 @@ chrome.runtime.onConnect.addListener((port) => {
       let success = false
 
       const aborter = new AbortController()
-      aborters.set(port, aborter)
+      pending.set(port, aborter)
       const { signal } = aborter
 
       const cleaner = new AbortController()
@@ -368,7 +338,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "wc_abandon") {
       const _ = request.params
 
-      aborters.get(port)?.abort()
+      pending.get(port)?.abort()
 
       return
     }
@@ -384,7 +354,7 @@ chrome.runtime.onConnect.addListener((port) => {
     if (request.method === "wc_delete") {
       const [account] = request.params as [WcAccount]
 
-      if (counters.has(account.uuid))
+      if (current?.account.uuid === account.uuid)
         throw new RpcInvalidRequestError()
 
       const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
@@ -399,11 +369,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "wc_account") {
-      const [location] = request.params as [string]
-
-      const { origin } = new URL(location)
-
-      const current = currents.get(origin)
+      const _ = request.params
 
       if (current == null)
         return
@@ -412,92 +378,69 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (request.method === "wc_connect") {
-      const [location, account] = request.params as [string, WcAccount]
-
-      const { origin } = new URL(location)
-
-      const current = currents.get(origin)
+      const [account] = request.params as [WcAccount]
 
       if (current != null)
         throw new RpcInvalidRequestError()
 
-      let counter = counters.get(account.uuid)
+      await using stack = new AsyncDisposableStack()
 
-      if (counter == null) {
-        await using stack = new AsyncDisposableStack()
+      let success = false
 
-        let success = false
+      const { jwk, tpc, key } = account.details
 
-        const { jwk, tpc, key } = account.details
+      const sticky = Uint8Array.fromBase64(jwk)
+      const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
 
-        const sticky = Uint8Array.fromBase64(jwk)
-        const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
+      stack.defer(() => success ? undefined : client.close())
 
-        stack.defer(() => success ? undefined : client.close())
+      const channel = new WcChannel(client, tpc, Uint8Array.fromBase64(key))
+      const session = new WcSession(channel)
 
-        const channel = new WcChannel(client, tpc, Uint8Array.fromBase64(key))
-        const session = new WcSession(channel)
+      const onEvent = (data: WcSessionEventParams) => {
+        console.log("Session event:", data)
 
-        const onEvent = (data: WcSessionEventParams) => {
-          console.log("Session event:", data)
-
-          return
-        }
-
-        const onRequest = (data: WcSessionRequestParams<unknown>) => {
-          console.log("Session request:", data)
-
-          throw new WcInvalidMethodError()
-        }
-
-        session.addEventListener("event", event => onEvent(event.data), { signal: session.closing })
-        session.addEventListener("request", event => event.respondWith(onRequest(event.data)), { signal: session.closing })
-        session.addEventListener("close", () => console.log("Session closed"), { signal: session.closing })
-
-        await session.open()
-
-        success = true
-
-        counter = new WcCounter(account, session)
-        counters.set(account.uuid, counter)
+        return
       }
 
-      counter.borrow()
+      const onRequest = (data: WcSessionRequestParams<unknown>) => {
+        console.log("Session request:", data)
 
-      currents.set(origin, counter)
+        throw new WcInvalidMethodError()
+      }
 
-      for (const channel of channels) {
-        const [port, origin2] = channel
+      session.addEventListener("event", event => onEvent(event.data), { signal: session.closing })
+      session.addEventListener("request", event => event.respondWith(onRequest(event.data)), { signal: session.closing })
+      session.addEventListener("close", () => console.log("Session closed"), { signal: session.closing })
 
-        if (origin2 !== origin)
-          continue
+      await session.open()
 
+      success = true
+
+      current = new WcAccountAndSession(account, session)
+
+      for (const [port] of origins) {
         port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_connect", [account.address.solana]))
         port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account.address.eip155]))
       }
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", [account]))
 
-      requests.get(origin)?.resolve(counter)
+      waiting?.resolve(current)
 
       return
     }
 
     if (request.method === "wc_disconnect") {
-      const [location] = request.params as [string]
+      const _ = request.params
 
-      const { origin } = new URL(location)
+      await current?.session.close()
 
-      await currents.get(origin)?.release()
+      current?.session.channel.client.close()
 
-      currents.delete(origin)
+      current = null
 
-      for (const channel of channels) {
-        const [port, origin2] = channel
-
-        if (origin2 !== origin)
-          continue
-
+      for (const [port] of origins) {
         port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_disconnect", undefined))
         port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", []))
       }
