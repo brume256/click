@@ -96,9 +96,10 @@ export class Provider extends EventEmitter {
 
     addEventListener("pipe:message", (event) => {
       const { detail: request } = event
+      const { method, params } = request
 
-      if (request.method === "solana_connect") {
-        const [address] = request.params as string[]
+      if (method === "solana_connect") {
+        const [address] = params as string[]
 
         const publicKey = new PublicKey(address)
 
@@ -109,7 +110,7 @@ export class Provider extends EventEmitter {
         return
       }
 
-      if (request.method === "solana_disconnect") {
+      if (method === "solana_disconnect") {
         this.publicKey = null
 
         this.emit("disconnect")

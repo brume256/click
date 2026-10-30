@@ -50,10 +50,10 @@ export function useLocation(channel: Channel) {
     if ("method" in message === false)
       return
 
-    const request = RpcRequest.from(message)
+    const { method, params } = RpcRequest.from(message)
 
-    if (request.method === "chrome_locationChanged") {
-      const [location] = request.params as [string]
+    if (method === "chrome_locationChanged") {
+      const [location] = params as [string]
 
       setLocation(location)
 
@@ -103,10 +103,10 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
     if ("method" in message === false)
       return
 
-    const request = RpcRequest.from(message)
+    const { method, params } = RpcRequest.from(message)
 
-    if (request.method === "wc_pairingChanged") {
-      const [code] = request.params as [string]
+    if (method === "wc_pairingChanged") {
+      const [code] = params as [string]
 
       setCode(code)
 
@@ -319,18 +319,18 @@ export function App(props: { channel: Channel } & { location: URL }) {
     if ("method" in message === false)
       return
 
-    const request = RpcRequest.from(message)
+    const { method, params } = RpcRequest.from(message)
 
-    if (request.method === "wc_accountChanged") {
-      const [account] = request.params as [WcAccount]
+    if (method === "wc_accountChanged") {
+      const [account] = params as [WcAccount]
 
       setAccount(account)
 
       return
     }
 
-    if (request.method === "wc_accountsChanged") {
-      const accounts = request.params as WcAccount[]
+    if (method === "wc_accountsChanged") {
+      const accounts = params as WcAccount[]
 
       setAccounts(accounts)
 

@@ -4,7 +4,7 @@ import { WcAccount } from "@/libs/account/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
-import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams, WcUserRejectedRequestError } from "@hazae41/latrine";
+import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams } from "@hazae41/latrine";
 
 class WcAccountAndSession {
 
@@ -46,25 +46,27 @@ chrome.runtime.onConnect.addListener((port) => {
   if (windowId == null)
     return
 
+  let chainId = 1
+
   const route = async (request: RpcRequest) => {
     const { method, params } = request
 
-    if (request.method === "ping")
+    if (method === "ping")
       return
 
-    if (request.method === "eth_chainId")
-      return "0x1"
+    if (method === "eth_chainId")
+      return `0x${chainId.toString(16)}`
 
-    if (request.method === "eth_accounts") {
+    if (method === "eth_accounts") {
       const _ = params
 
-      if (current == null)
-        return []
+      if (current != null)
+        return [current.account.address.eip155]
 
-      return [current.account.address.eip155]
+      return []
     }
 
-    if (request.method === "eth_requestAccounts") {
+    if (method === "eth_requestAccounts") {
       const _ = params
 
       if (current != null)
@@ -89,7 +91,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return [resolved.account.address.eip155]
     }
 
-    if (request.method === "personal_sign") {
+    if (method === "personal_sign") {
       const _ = params
 
       if (current == null)
@@ -98,7 +100,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
-    if (request.method === "eth_signTypedData_v4") {
+    if (method === "eth_signTypedData_v4") {
       const _ = params
 
       if (current == null)
@@ -107,7 +109,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
-    if (request.method === "eth_sendTransaction") {
+    if (method === "eth_sendTransaction") {
       const _ = params
 
       if (current == null)
@@ -116,13 +118,27 @@ chrome.runtime.onConnect.addListener((port) => {
       return await current.session.request({ chainId: "eip155:1", request: { method, params } })
     }
 
-    if (request.method === "solana_connect") {
-      const { onlyIfTrusted } = params as { onlyIfTrusted?: boolean }
+    if (method === "wallet_addEthereumChain") {
+      const [_] = params as [{ chainId: string }]
+
+      // NOOP
+
+      return
+    }
+
+    if (method === "wallet_switchEthereumChain") {
+      const [chain] = params as [{ chainId: string }]
+
+      chainId = parseInt(chain.chainId, 16)
+
+      return
+    }
+
+    if (method === "solana_connect") {
+      const _ = params
 
       if (current != null)
         return [current.account.address.solana]
-      if (onlyIfTrusted)
-        throw new WcUserRejectedRequestError()
       if (waiting != null)
         return await waiting.promise
 
@@ -143,11 +159,11 @@ chrome.runtime.onConnect.addListener((port) => {
       return [resolved.account.address.solana]
     }
 
-    if (request.method === "solana_disconnect") {
+    if (method === "solana_disconnect") {
       return port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_disconnect", undefined))
     }
 
-    if (request.method === "solana_signMessage") {
+    if (method === "solana_signMessage") {
       const _ = params
 
       if (current == null)
@@ -156,7 +172,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return await current.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request: { method, params } })
     }
 
-    if (request.method === "solana_signTransaction") {
+    if (method === "solana_signTransaction") {
       const _ = params
 
       if (current == null)
@@ -225,10 +241,12 @@ chrome.runtime.onConnect.addListener((port) => {
   let proposal = new AbortController()
 
   const route = async (request: RpcRequest) => {
-    if (request.method === "ping")
+    const { method, params } = request
+
+    if (method === "ping")
       return
 
-    if (request.method === "chrome_location") {
+    if (method === "chrome_location") {
       const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
 
       if (tab.url == null)
@@ -237,8 +255,8 @@ chrome.runtime.onConnect.addListener((port) => {
       return tab.url
     }
 
-    if (request.method === "wc_propose") {
-      const [title, color] = request.params as [string, string]
+    if (method === "wc_propose") {
+      const [title, color] = params as [string, string]
 
       await using stack = new AsyncDisposableStack()
 
@@ -336,24 +354,24 @@ chrome.runtime.onConnect.addListener((port) => {
       return
     }
 
-    if (request.method === "wc_abandon") {
-      const _ = request.params
+    if (method === "wc_abandon") {
+      const _ = params
 
       proposal.abort()
 
       return
     }
 
-    if (request.method === "wc_accounts") {
-      const _ = request.params
+    if (method === "wc_accounts") {
+      const _ = params
 
       const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
 
       return accounts
     }
 
-    if (request.method === "wc_delete") {
-      const [account] = request.params as [WcAccount]
+    if (method === "wc_delete") {
+      const [account] = params as [WcAccount]
 
       if (current?.account.uuid === account.uuid)
         throw new RpcInvalidRequestError()
@@ -369,17 +387,17 @@ chrome.runtime.onConnect.addListener((port) => {
       return
     }
 
-    if (request.method === "wc_account") {
-      const _ = request.params
+    if (method === "wc_account") {
+      const _ = params
 
-      if (current == null)
-        return
+      if (current != null)
+        return current.account
 
-      return current.account
+      return
     }
 
-    if (request.method === "wc_connect") {
-      const [account] = request.params as [WcAccount]
+    if (method === "wc_connect") {
+      const [account] = params as [WcAccount]
 
       if (current != null)
         throw new RpcInvalidRequestError()
@@ -432,8 +450,8 @@ chrome.runtime.onConnect.addListener((port) => {
       return
     }
 
-    if (request.method === "wc_disconnect") {
-      const _ = request.params
+    if (method === "wc_disconnect") {
+      const _ = params
 
       await current?.session.close()
 

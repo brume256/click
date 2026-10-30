@@ -19,25 +19,26 @@ export class Ethereum extends EventEmitter {
 
     addEventListener("pipe:message", (event) => {
       const { detail: request } = event
+      const { method, params } = request
 
-      if (request.method === "eth_accountsChanged") {
-        const accounts = request.params as string[]
+      if (method === "eth_accountsChanged") {
+        const accounts = params as string[]
 
         this.emit("accountsChanged", accounts)
 
         return
       }
 
-      if (request.method === "eth_chainChanged") {
-        const [chainIdAsHex] = request.params as [string]
+      if (method === "eth_chainChanged") {
+        const [chainIdAsHex] = params as [string]
 
         this.emit("chainChanged", chainIdAsHex)
 
         return
       }
 
-      if (request.method === "eth_message") {
-        const [content] = request.params as [string]
+      if (method === "eth_message") {
+        const [content] = params as [string]
 
         this.emit("message", content)
 
@@ -63,15 +64,25 @@ export class Ethereum extends EventEmitter {
       return await pipe.request<T>(init)
     if (method === "eth_requestAccounts")
       return await pipe.request<T>(init)
+
+    if (method === "wallet_addEthereumChain")
+      return await pipe.request<T>(init)
+    if (method === "wallet_switchEthereumChain")
+      return await pipe.request<T>(init)
+
+    if (method === "wallet_getPermissions")
+      return await pipe.request<T>(init)
+    if (method === "wallet_requestPermissions")
+      return await pipe.request<T>(init)
+    if (method === "wallet_revokePermissions")
+      return await pipe.request<T>(init)
+
     if (method === "personal_sign")
       return await pipe.request<T>(init)
     if (method === "eth_sendTransaction")
       return await pipe.request<T>(init)
     if (method === "eth_signTypedData_v4")
       return await pipe.request<T>(init)
-
-    if (method === "wallet_requestPermissions")
-      return { parentCapability: "eth_accounts", caveats: [] }
 
     throw new RpcMethodNotFoundError()
   }

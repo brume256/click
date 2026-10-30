@@ -86,6 +86,8 @@ namespace backend {
 
 namespace frontend {
 
+  const permissions: Record<string, Record<string, unknown>> = {}
+
   export function message(init: RpcRequestPreinit) {
     const { method, params } = init
 
@@ -95,45 +97,186 @@ namespace frontend {
   }
 
   export function routeSync(request: RpcRequest) {
-    if (request.method === "eip6963_uuid")
+    const { method } = request
+
+    if (method === "eip6963_uuid")
       return "e60d639a-8479-4a9b-a7d6-ac4bd3957b13"
-    if (request.method === "eip6963_rdns")
+    if (method === "eip6963_rdns")
       return "tech.brume.click"
 
-    if (request.method === "chrome_name")
+    if (method === "chrome_name")
       return chrome.runtime.getManifest().name
-    if (request.method === "chrome_version")
+    if (method === "chrome_version")
       return chrome.runtime.getManifest().version
 
     throw new RpcMethodNotFoundError()
   }
 
   export async function route(request: RpcRequest) {
-    const { method } = request
+    const { method, params } = request
 
-    if (method === "eth_chainId")
-      return await backend.request(request)
-    if (method === "eth_accounts")
-      return await backend.request(request)
-    if (method === "eth_requestAccounts")
-      return await backend.request(request)
+    if (method === "eth_chainId") {
+      const _ = params
 
-    if (method === "solana_connect")
-      return await backend.request(request)
-    if (method === "solana_disconnect")
-      return await backend.request(request)
+      // NOOP
 
-    if (method === "personal_sign" && navigator.userActivation.isActive && confirm(`I want to sign a message`))
       return await backend.request(request)
-    if (method === "eth_signTypedData_v4" && navigator.userActivation.isActive && confirm(`I want to sign a message`))
-      return await backend.request(request)
-    if (method === "eth_sendTransaction" && navigator.userActivation.isActive && confirm(`I want to sign a transaction`))
-      return await backend.request(request)
+    }
 
-    if (method === "solana_signMessage" && navigator.userActivation.isActive && confirm(`I want to sign a message`))
+    if (method === "eth_accounts") {
+      const _ = params
+
+      if (permissions["eth_accounts"] == null)
+        return []
+
       return await backend.request(request)
-    if (method === "solana_signTransaction" && navigator.userActivation.isActive && confirm(`I want to sign a transaction`))
+    }
+
+    if (method === "eth_requestAccounts") {
+      const _ = params
+
+      if (permissions["eth_accounts"] != null)
+        return await backend.request(request)
+
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to access your crypto accounts`))
+        throw new RpcInvalidRequestError()
+
+      permissions["eth_accounts"] = {}
+
       return await backend.request(request)
+    }
+
+    if (method === "wallet_addEthereumChain") {
+      const _ = params
+
+      // NOOP
+
+      return await backend.request(request)
+    }
+
+    if (method === "wallet_switchEthereumChain") {
+      const _ = params
+
+      // NOOP
+
+      return await backend.request(request)
+    }
+
+    if (method === "wallet_getPermissions") {
+      const _ = params
+
+      // NOOP
+
+      return Object.entries(permissions).map(([key, value]) => ({ parentCapability: key, caveats: Object.entries(value).map(([type, value]) => ({ type, value })) }))
+    }
+
+    if (method === "wallet_requestPermissions") {
+      const [requested] = params as [Record<string, Record<string, unknown>>]
+
+      if (requested["eth_accounts"] == null)
+        throw new RpcInvalidRequestError()
+
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to access your crypto accounts`))
+        throw new RpcInvalidRequestError()
+
+      permissions["eth_accounts"] = {}
+
+      return Object.entries(permissions).map(([key, value]) => ({ parentCapability: key, caveats: Object.entries(value).map(([type, value]) => ({ type, value })) }))
+    }
+
+    if (method === "wallet_revokePermissions") {
+      const [requested] = params as [Record<string, Record<string, unknown>>]
+
+      if (requested["eth_accounts"] == null)
+        throw new RpcInvalidRequestError()
+
+      delete permissions["eth_accounts"]
+
+      return Object.entries(permissions).map(([key, value]) => ({ parentCapability: key, caveats: Object.entries(value).map(([type, value]) => ({ type, value })) }))
+    }
+
+    if (method === "solana_connect") {
+      const { onlyIfTrusted } = params as { onlyIfTrusted?: boolean }
+
+      if (permissions["solana_connect"] != null)
+        return await backend.request(request)
+
+      if (onlyIfTrusted)
+        throw new RpcInvalidRequestError()
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to access your crypto accounts`))
+        throw new RpcInvalidRequestError()
+
+      return await backend.request(request)
+    }
+
+    if (method === "solana_disconnect") {
+      const _ = params
+
+      // NOOP
+
+      return await backend.request(request)
+    }
+
+    if (method === "personal_sign") {
+      const _ = params
+
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to sign a message`))
+        throw new RpcInvalidRequestError()
+
+      return await backend.request(request)
+    }
+
+    if (method === "eth_signTypedData_v4") {
+      const _ = params
+
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to sign a message`))
+        throw new RpcInvalidRequestError()
+
+      return await backend.request(request)
+    }
+
+    if (method === "eth_sendTransaction") {
+      const _ = params
+
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to sign a transaction`))
+        throw new RpcInvalidRequestError()
+
+      return await backend.request(request)
+    }
+
+    if (method === "solana_signMessage") {
+      const _ = params
+
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to sign a message`))
+        throw new RpcInvalidRequestError()
+
+      return await backend.request(request)
+    }
+
+    if (method === "solana_signTransaction") {
+      const _ = params
+
+      if (!navigator.userActivation.isActive)
+        throw new RpcInvalidRequestError()
+      if (!confirm(`I want to sign a transaction`))
+        throw new RpcInvalidRequestError()
+
+      return await backend.request(request)
+    }
 
     throw new RpcInvalidRequestError()
   }
