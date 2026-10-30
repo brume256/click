@@ -155,6 +155,14 @@ namespace frontend {
       return await backend.request(request)
     }
 
+    if (method === "eth_coinbase") {
+      const _ = params
+
+      if (permissions["eth_accounts"] == null)
+        return null
+
+      return await backend.request(request)
+    }
 
     if (method === "eth_accounts") {
       const _ = params

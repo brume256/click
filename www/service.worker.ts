@@ -147,6 +147,15 @@ chrome.runtime.onConnect.addListener((port) => {
       return RpcResponse.from(json).getOrThrow()
     }
 
+    if (method === "eth_coinbase") {
+      const _ = params
+
+      if (current != null)
+        return current.account.address.eip155
+
+      return null
+    }
+
     if (method === "eth_accounts") {
       const _ = params
 

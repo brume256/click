@@ -69,6 +69,8 @@ export class Ethereum extends EventEmitter {
     if (method === "eth_estimateGas")
       return await pipe.request<T>(init)
 
+    if (method === "eth_coinbase")
+      return await pipe.request<T>(init)
     if (method === "eth_accounts")
       return await pipe.request<T>(init)
     if (method === "eth_requestAccounts")
