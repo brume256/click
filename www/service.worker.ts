@@ -1,9 +1,10 @@
 /// <reference types="chrome" />
 
 import { WcAccount } from "@/libs/account/mod.ts";
+import { chainlist } from "@/libs/chainlist/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
-import { RpcErr, RpcError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit } from "@hazae41/jsonrpc";
+import { RpcErr, RpcError, RpcInternalError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcResponse } from "@hazae41/jsonrpc";
 import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams } from "@hazae41/latrine";
 
 class WcAccountAndSession {
@@ -54,8 +55,97 @@ chrome.runtime.onConnect.addListener((port) => {
     if (method === "ping")
       return
 
-    if (method === "eth_chainId")
+    if (method === "eth_chainId") {
+      const _ = params
+
+      // NOOP
+
       return `0x${chainId.toString(16)}`
+    }
+
+    if (method === "eth_call") {
+      const _ = params
+
+      const chain = chainlist.find(x => x.chainId === chainId)
+
+      if (chain == null)
+        throw new RpcInvalidRequestError()
+
+      const headers = { "Content-Type": "application/json" }
+
+      const body = JSON.stringify(request)
+      const http = await fetch(chain.rpc, { method: "POST", headers, body })
+
+      if (!http.ok)
+        throw new RpcInternalError()
+
+      const json = await http.json()
+
+      return RpcResponse.from(json).getOrThrow()
+    }
+
+    if (method === "eth_blockNumber") {
+      const _ = params
+
+      const chain = chainlist.find(x => x.chainId === chainId)
+
+      if (chain == null)
+        throw new RpcInvalidRequestError()
+
+      const headers = { "Content-Type": "application/json" }
+
+      const body = JSON.stringify(request)
+      const http = await fetch(chain.rpc, { method: "POST", headers, body })
+
+      if (!http.ok)
+        throw new RpcInternalError()
+
+      const json = await http.json()
+
+      return RpcResponse.from(json).getOrThrow()
+    }
+
+    if (method === "eth_getBalance") {
+      const _ = params
+
+      const chain = chainlist.find(x => x.chainId === chainId)
+
+      if (chain == null)
+        throw new RpcInvalidRequestError()
+
+      const headers = { "Content-Type": "application/json" }
+
+      const body = JSON.stringify(request)
+      const http = await fetch(chain.rpc, { method: "POST", headers, body })
+
+      if (!http.ok)
+        throw new RpcInternalError()
+
+      const json = await http.json()
+
+      return RpcResponse.from(json).getOrThrow()
+    }
+
+    if (method === "eth_estimateGas") {
+      const _ = params
+
+      const chain = chainlist.find(x => x.chainId === chainId)
+
+      if (chain == null)
+        throw new RpcInvalidRequestError()
+
+      const headers = { "Content-Type": "application/json" }
+
+      const body = JSON.stringify(request)
+      const http = await fetch(chain.rpc, { method: "POST", headers, body })
+
+      if (!http.ok)
+        throw new RpcInternalError()
+
+      const json = await http.json()
+
+      return RpcResponse.from(json).getOrThrow()
+    }
 
     if (method === "eth_accounts") {
       const _ = params
@@ -81,10 +171,10 @@ chrome.runtime.onConnect.addListener((port) => {
       waiting = future
       stack.defer(() => waiting = null)
 
+      await chrome.sidePanel.open({ windowId }).catch(() => { })
+
       chrome.sidePanel.onClosed.addListener(future.reject)
       stack.defer(() => chrome.sidePanel.onClosed.removeListener(future.reject))
-
-      await chrome.sidePanel.open({ windowId })
 
       const resolved = await future.promise
 
@@ -97,7 +187,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      return await current.session.request({ chainId: "eip155:1", request: { method, params } })
+      return await current.session.request({ chainId: `eip155:${chainId}`, request: { method, params } })
     }
 
     if (method === "eth_signTypedData_v4") {
@@ -106,7 +196,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      return await current.session.request({ chainId: "eip155:1", request: { method, params } })
+      return await current.session.request({ chainId: `eip155:${chainId}`, request: { method, params } })
     }
 
     if (method === "eth_sendTransaction") {
@@ -115,7 +205,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (current == null)
         throw new RpcInvalidRequestError()
 
-      return await current.session.request({ chainId: "eip155:1", request: { method, params } })
+      return await current.session.request({ chainId: `eip155:${chainId}`, request: { method, params } })
     }
 
     if (method === "wallet_addEthereumChain") {

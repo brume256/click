@@ -123,6 +123,39 @@ namespace frontend {
       return await backend.request(request)
     }
 
+    if (method === "eth_call") {
+      const _ = params
+
+      // NOOP
+
+      return await backend.request(request)
+    }
+
+    if (method === "eth_blockNumber") {
+      const _ = params
+
+      // NOOP
+
+      return await backend.request(request)
+    }
+
+    if (method === "eth_getBalance") {
+      const _ = params
+
+      // NOOP
+
+      return await backend.request(request)
+    }
+
+    if (method === "eth_estimateGas") {
+      const _ = params
+
+      // NOOP
+
+      return await backend.request(request)
+    }
+
+
     if (method === "eth_accounts") {
       const _ = params
 
@@ -138,8 +171,6 @@ namespace frontend {
       if (permissions["eth_accounts"] != null)
         return await backend.request(request)
 
-      if (!navigator.userActivation.isActive)
-        throw new RpcInvalidRequestError()
       if (!confirm(`I want to access your crypto accounts`))
         throw new RpcInvalidRequestError()
 
@@ -178,8 +209,6 @@ namespace frontend {
       if (requested["eth_accounts"] == null)
         throw new RpcInvalidRequestError()
 
-      if (!navigator.userActivation.isActive)
-        throw new RpcInvalidRequestError()
       if (!confirm(`I want to access your crypto accounts`))
         throw new RpcInvalidRequestError()
 
@@ -206,8 +235,6 @@ namespace frontend {
         return await backend.request(request)
 
       if (onlyIfTrusted)
-        throw new RpcInvalidRequestError()
-      if (!navigator.userActivation.isActive)
         throw new RpcInvalidRequestError()
       if (!confirm(`I want to access your crypto accounts`))
         throw new RpcInvalidRequestError()
@@ -278,7 +305,7 @@ namespace frontend {
       return await backend.request(request)
     }
 
-    throw new RpcInvalidRequestError()
+    throw new RpcMethodNotFoundError()
   }
 
   addEventListener("pipe:requestSync", (event) => {

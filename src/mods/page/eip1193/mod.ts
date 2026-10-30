@@ -60,6 +60,15 @@ export class Ethereum extends EventEmitter {
 
     if (method === "eth_chainId")
       return await pipe.request<T>(init)
+    if (method === "eth_call")
+      return await pipe.request<T>(init)
+    if (method === "eth_blockNumber")
+      return await pipe.request<T>(init)
+    if (method === "eth_getBalance")
+      return await pipe.request<T>(init)
+    if (method === "eth_estimateGas")
+      return await pipe.request<T>(init)
+
     if (method === "eth_accounts")
       return await pipe.request<T>(init)
     if (method === "eth_requestAccounts")
@@ -83,6 +92,8 @@ export class Ethereum extends EventEmitter {
       return await pipe.request<T>(init)
     if (method === "eth_signTypedData_v4")
       return await pipe.request<T>(init)
+
+    console.debug("Unknown method", method)
 
     throw new RpcMethodNotFoundError()
   }
