@@ -375,14 +375,12 @@ chrome.runtime.onConnect.addListener((port) => {
         icons: [icon]
       }
 
-      const requiredNamespaces = {
+      const optionalNamespaces = {
         eip155: {
-          chains: ["eip155:1"],
-          methods: ["personal_sign", "eth_sendTransaction", "eth_signTypedData_v4"],
-          events: ["accountsChanged", "chainChanged"]
+          methods: ["personal_sign", "eth_signTypedData_v4", "eth_sendTransaction"],
+          events: []
         },
         solana: {
-          chains: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
           methods: ["solana_signMessage", "solana_signTransaction"],
           events: []
         }
@@ -410,7 +408,7 @@ chrome.runtime.onConnect.addListener((port) => {
       stack.defer(async () => await pairing.close())
       stack.defer(async () => await pairing.delete())
 
-      await pairing.propose({ self, requiredNamespaces }, signal)
+      await pairing.propose({ self, optionalNamespaces }, signal)
 
       const session = await upgraded.promise
 
