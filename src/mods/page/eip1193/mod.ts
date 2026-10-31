@@ -37,14 +37,6 @@ export class Ethereum extends EventEmitter {
         return
       }
 
-      if (method === "eth_message") {
-        const [content] = params as [string]
-
-        this.emit("message", content)
-
-        return
-      }
-
       return
     }, { passive: true })
 

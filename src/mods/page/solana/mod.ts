@@ -4,7 +4,7 @@ import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { pipe } from "@/mods/page/pipe/mod.ts";
 import { base58 } from "@hazae41/base58";
-import { RpcInternalError } from "@hazae41/jsonrpc";
+import { RpcInternalError, RpcInvalidRequestError } from "@hazae41/jsonrpc";
 import { BN } from "bn.js";
 import { Buffer } from "buffer";
 import { EventEmitter } from "events";
@@ -101,6 +101,9 @@ export class Provider extends EventEmitter {
       if (method === "solana_connect") {
         const [address] = params as string[]
 
+        if (address == null)
+          return
+
         const publicKey = new PublicKey(address)
 
         this.publicKey = publicKey
@@ -132,8 +135,11 @@ export class Provider extends EventEmitter {
     return this.publicKey != null
   }
 
-  async connect(params: { onlyIfTrusted?: boolean } = {}): Promise<{ publicKey: PublicKey }> {
+  async connect(params: { onlyIfTrusted?: boolean } = {}): Promise<{ publicKey?: PublicKey }> {
     const [address] = await pipe.request<string[]>({ method: "solana_connect", params })
+
+    if (address == null)
+      throw new RpcInvalidRequestError()
 
     const publicKey = new PublicKey(address)
 
@@ -236,9 +242,12 @@ export async function connect(props: { silent?: boolean } = {}) {
   const { silent } = props
 
   const params = { onlyIfTrusted: silent }
-  const result = await pipe.request<string[]>({ method: "solana_connect", params })
+  const [address] = await pipe.request<string[]>({ method: "solana_connect", params })
 
-  const accounts = result.map(address => new WalletAccount(address))
+  if (address == null)
+    throw new RpcInvalidRequestError()
+
+  const accounts = [new WalletAccount(address)]
 
   wallet.accounts = accounts
 

@@ -17,7 +17,6 @@ class WcAccountAndSession {
 }
 
 let current: Nullable<WcAccountAndSession> = null
-let waiting: Nullable<PromiseWithResolvers<WcAccountAndSession>> = null
 
 const origins = new Map<chrome.runtime.Port, string>()
 
@@ -170,24 +169,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       if (current != null)
         return [current.account.address.eip155]
-      if (waiting != null)
-        return await waiting.promise
 
-      using stack = new DisposableStack()
-
-      const future = Promise.withResolvers<WcAccountAndSession>()
-
-      waiting = future
-      stack.defer(() => waiting = null)
-
-      await chrome.sidePanel.open({ windowId }).catch(() => { })
-
-      chrome.sidePanel.onClosed.addListener(future.reject)
-      stack.defer(() => chrome.sidePanel.onClosed.removeListener(future.reject))
-
-      const resolved = await future.promise
-
-      return [resolved.account.address.eip155]
+      return []
     }
 
     if (method === "personal_sign") {
@@ -238,24 +221,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       if (current != null)
         return [current.account.address.solana]
-      if (waiting != null)
-        return await waiting.promise
 
-      using stack = new DisposableStack()
-
-      const future = Promise.withResolvers<WcAccountAndSession>()
-
-      waiting = future
-      stack.defer(() => waiting = null)
-
-      chrome.sidePanel.onClosed.addListener(future.reject)
-      stack.defer(() => chrome.sidePanel.onClosed.removeListener(future.reject))
-
-      await chrome.sidePanel.open({ windowId })
-
-      const resolved = await future.promise
-
-      return [resolved.account.address.solana]
+      return []
     }
 
     if (method === "solana_disconnect") {
@@ -545,8 +512,6 @@ chrome.runtime.onConnect.addListener((port) => {
       }
 
       port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", [account]))
-
-      waiting?.resolve(current)
 
       return
     }

@@ -266,6 +266,8 @@ namespace frontend {
       if (!confirm(`I want to sign a message`))
         throw new RpcInvalidRequestError()
 
+      alert(`Open your wallet to sign the message`)
+
       return await backend.request(request)
     }
 
@@ -276,6 +278,8 @@ namespace frontend {
         throw new RpcInvalidRequestError()
       if (!confirm(`I want to sign a message`))
         throw new RpcInvalidRequestError()
+
+      alert(`Open your wallet to sign the message`)
 
       return await backend.request(request)
     }
@@ -288,6 +292,8 @@ namespace frontend {
       if (!confirm(`I want to sign a transaction`))
         throw new RpcInvalidRequestError()
 
+      alert(`Open your wallet to sign the transaction`)
+
       return await backend.request(request)
     }
 
@@ -299,6 +305,8 @@ namespace frontend {
       if (!confirm(`I want to sign a message`))
         throw new RpcInvalidRequestError()
 
+      alert(`Open your wallet to sign the message`)
+
       return await backend.request(request)
     }
 
@@ -309,6 +317,8 @@ namespace frontend {
         throw new RpcInvalidRequestError()
       if (!confirm(`I want to sign a transaction`))
         throw new RpcInvalidRequestError()
+
+      alert(`Open your wallet to sign the transaction`)
 
       return await backend.request(request)
     }
