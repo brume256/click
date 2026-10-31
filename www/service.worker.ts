@@ -427,6 +427,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { namespaces } = await settled.promise
 
+      console.debug("Session namespaces", namespaces)
+
       success = true
 
       await session.close()
@@ -439,8 +441,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const { eip155, solana } = namespaces as { eip155: { accounts: string[] }, solana: { accounts: string[] } }
 
-      const eth = eip155.accounts[0].split(":")[2]
-      const sol = solana.accounts[0].split(":")[2]
+      const eth = eip155?.accounts?.[0]?.split(":")?.[2]
+      const sol = solana?.accounts?.[0]?.split(":")?.[2]
 
       accounts.push({ uuid: crypto.randomUUID(), type: "walletconnect", title, color, address: { eip155: eth, solana: sol }, details: { jwk, tpc, key } })
 
@@ -514,20 +516,20 @@ chrome.runtime.onConnect.addListener((port) => {
       const session = new WcSession(channel)
 
       const onEvent = (data: WcSessionEventParams) => {
-        console.log("Session event:", data)
+        console.debug("Session event", data)
 
         return
       }
 
       const onRequest = (data: WcSessionRequestParams<unknown>) => {
-        console.log("Session request:", data)
+        console.debug("Session request", data)
 
         throw new WcInvalidMethodError()
       }
 
       session.addEventListener("event", event => onEvent(event.data), { signal: session.closing })
       session.addEventListener("request", event => event.respondWith(onRequest(event.data)), { signal: session.closing })
-      session.addEventListener("close", () => console.log("Session closed"), { signal: session.closing })
+      session.addEventListener("close", () => console.debug("Session closed"), { signal: session.closing })
 
       await session.open()
 
