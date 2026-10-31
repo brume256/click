@@ -377,10 +377,12 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const optionalNamespaces = {
         eip155: {
+          chains: ["eip155:1"],
           methods: ["personal_sign", "eth_signTypedData_v4", "eth_sendTransaction"],
           events: []
         },
         solana: {
+          chains: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
           methods: ["solana_signMessage", "solana_signTransaction"],
           events: []
         }
