@@ -242,7 +242,9 @@ export async function connect(props: { silent?: boolean } = {}) {
   const { silent } = props
 
   const params = { onlyIfTrusted: silent }
-  const [address] = await pipe.request<string[]>({ method: "solana_connect", params })
+  const result = await pipe.request<string[]>({ method: "solana_connect", params })
+
+  const [address] = result
 
   if (address == null)
     throw new RpcInvalidRequestError()
@@ -262,20 +264,24 @@ export async function disconnect() {
   return
 }
 
-export async function signMessage(props: { account: WalletAccount, message: Uint8Array }) {
-  const { account, message } = props
+export async function signMessage(...inputs: { account: WalletAccount, message: Uint8Array }[]) {
+  const outputs = []
 
-  const message58 = base58.encode(message)
-  const pubkey58 = base58.encode(account.publicKey)
+  for (const input of inputs) {
+    const { account, message } = input
 
-  const params = { message: message58, pubkey: pubkey58 }
-  const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
+    const message58 = base58.encode(message)
+    const pubkey58 = base58.encode(account.publicKey)
 
-  const signature = base58.decode(result.signature)
+    const params = { message: message58, pubkey: pubkey58 }
+    const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
 
-  // TODO fix
+    const signature = base58.decode(result.signature)
 
-  return { signature, signedMessage: message, signatureType: "ed25519" }
+    outputs.push({ signature, signedMessage: message, signatureType: "ed25519" })
+  }
+
+  return outputs
 }
 
 export async function signTransaction() {
@@ -326,8 +332,8 @@ export function announce() {
   dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
 }
 
-// addEventListener("wallet-standard:app-ready", (event) => {
-//   event.detail.register(wallet)
-// }, { passive: true })
+addEventListener("wallet-standard:app-ready", (event) => {
+  event.detail.register(wallet)
+}, { passive: true })
 
-// announce()
+announce()
