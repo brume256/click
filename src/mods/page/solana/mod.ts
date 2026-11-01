@@ -1,9 +1,10 @@
-// deno-lint-ignore-file require-await no-explicit-any no-window
+// deno-lint-ignore-file no-explicit-any no-window
 
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { pipe } from "@/mods/page/pipe/mod.ts";
 import { base58 } from "@hazae41/base58";
+import { Cursor } from "@hazae41/cursor";
 import { RpcInternalError, RpcInvalidRequestError } from "@hazae41/jsonrpc";
 import { BN } from "bn.js";
 import { Buffer } from "buffer";
@@ -75,9 +76,7 @@ export class PublicKey {
 
 }
 
-export interface VersionedTransactionLike {
-
-  readonly version: number
+export interface TransactionLike {
 
   readonly signatures: Uint8Array[]
 
@@ -163,7 +162,7 @@ export class Provider extends EventEmitter {
       throw new RpcInternalError()
 
     const message58 = base58.encode(message)
-    const pubkey58 = this.publicKey?.toString()
+    const pubkey58 = this.publicKey.toString()
 
     const params = { message: message58, pubkey: pubkey58 }
     const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
@@ -173,13 +172,16 @@ export class Provider extends EventEmitter {
     return { signature, publicKey: this.publicKey }
   }
 
-  async signTransaction(transaction: VersionedTransactionLike) {
+  async signTransaction(transaction: TransactionLike) {
     if (this.publicKey == null)
       await this.connect({ onlyIfTrusted: false })
     if (this.publicKey == null)
       throw new RpcInternalError()
 
-    const params = { transaction: transaction.serialize().toBase64() }
+    const transaction64 = transaction.serialize().toBase64()
+    const pubkey58 = this.publicKey.toString()
+
+    const params = { transaction: transaction64, pubkey: pubkey58 }
     const result = await pipe.request<{ signature: string }>({ method: "solana_signTransaction", params })
 
     const signature = base58.decode(result.signature)
@@ -284,8 +286,54 @@ export async function signMessage(...inputs: { account: WalletAccount, message: 
   return outputs
 }
 
-export async function signTransaction() {
-  throw new Error("Not implemented")
+/*
+ * Only supports legacy and v0 transactions
+ */
+export async function signTransaction(...inputs: { account: WalletAccount, transaction: Uint8Array }[]) {
+  const outputs = []
+
+  for (const input of inputs) {
+    const { account, transaction } = input
+
+    const transaction64 = transaction.toBase64()
+    const pubkey58 = account.publicKey.toString()
+
+    const params = { transaction: transaction64, pubkey: pubkey58 }
+    const result = await pipe.request<{ signature: string }>({ method: "solana_signTransaction", params })
+
+    const signature = base58.decode(result.signature)
+
+    const signed = new Uint8Array(transaction)
+    const cursor = new Cursor(signed)
+
+    const sigcount = cursor.readUint8()
+    const sigstart = cursor.offset
+
+    cursor.offset += sigcount * 64
+
+    const version = cursor.getUint8()
+
+    cursor.offset += version === 0x80 ? 1 : 0
+    cursor.offset += 3
+
+    const acccount = cursor.readUint8()
+    const accuntil = cursor.offset + acccount * 32
+
+    for (let accindex = 0; cursor.offset < accuntil; accindex++) {
+      const accbytes = cursor.read(32)
+
+      if (base58.encode(accbytes) !== pubkey58)
+        continue
+
+      signed.set(signature, sigstart + accindex * 64)
+
+      continue
+    }
+
+    outputs.push({ transaction: signed })
+  }
+
+  return outputs
 }
 
 export const wallet: WalletLike = {
@@ -321,7 +369,7 @@ export const wallet: WalletLike = {
     },
     "solana:signTransaction": {
       version: "1.0.0",
-      supportedTransactionVersions: ["legacy", 0, 1],
+      supportedTransactionVersions: ["legacy", 0],
       signTransaction
     }
   }
