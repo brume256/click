@@ -32,12 +32,18 @@ export class Channel extends EventTarget {
     super.removeEventListener(type, callback, options)
   }
 
+  reconnect() {
+    this.#port?.disconnect?.()
+
+    this.#port = this.#connect()
+
+    return
+  }
+
   #connect() {
     const port = chrome.runtime.connect()
 
     port.onMessage.addListener((message) => this.dispatchEvent(new MessageEvent("message", { data: message })))
-
-    port.onDisconnect.addListener(() => { this.#port = this.#connect() })
 
     port.onDisconnect.addListener(() => console.warn("Port disconnected"))
 

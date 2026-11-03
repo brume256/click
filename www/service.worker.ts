@@ -282,7 +282,14 @@ chrome.runtime.onConnect.addListener((script) => {
     }
   }
 
-  const onDisconnect = () => stack.dispose()
+  const onDisconnect = () => {
+    const error = chrome.runtime.lastError
+
+    if (error != null)
+      console.warn(error.message)
+
+    stack.dispose()
+  }
 
   script.onMessage.addListener(onMessage)
   script.onDisconnect.addListener(onDisconnect)
@@ -559,7 +566,14 @@ chrome.runtime.onConnect.addListener((panel) => {
     }
   }
 
-  const onDisconnect = () => stack.dispose()
+  const onDisconnect = () => {
+    const error = chrome.runtime.lastError
+
+    if (error != null)
+      console.warn(error.message)
+
+    stack.dispose()
+  }
 
   panel.onMessage.addListener(onMessage)
   panel.onDisconnect.addListener(onDisconnect)

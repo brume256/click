@@ -55,6 +55,12 @@ namespace backend {
     channel.request({ method: "ping" }).catch(console.error)
   }, 1000)
 
+  addEventListener("pageshow", (event) => {
+    if (!event.persisted)
+      return
+    channel.reconnect()
+  }, { passive: true })
+
 }
 
 namespace frontend {
