@@ -9,6 +9,7 @@ import { Errors } from "@/libs/errors/mod.ts";
 import { Events } from "@/libs/events/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
+import { useTask } from "@/libs/task/mod.ts";
 import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit } from "@hazae41/jsonrpc";
@@ -48,7 +49,7 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
 
   const close0 = useCloseContext().getOrThrow()
 
-  const close = useCallback(() => {
+  const closeAndClose = useCallback(() => {
     setTimeout(() => close0(), 0)
     setTimeout(() => close1(), 500)
   }, [close0, close1])
@@ -57,7 +58,7 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
   const [blob, setBlob] = useState<string>()
 
   useEffect(() => {
-    channel.request<void>({ method: "wc_propose", params: [title, color] }).then(() => close()).catch(console.error)
+    channel.request<void>({ method: "wc_propose", params: [title, color] }).then(() => closeAndClose()).catch(console.error)
     return () => void channel.request<void>({ method: "wc_abandon" }).catch(console.error)
   }, [])
 
@@ -311,7 +312,7 @@ export function App(props: { channel: Channel }) {
     channel.request<WcAccount>({ method: "wc_account", params: [] }).then(setAccount)
   }, [channel])
 
-  const onConnect = useCallback((wanted: WcAccount) => Promise.try(async () => {
+  const onConnect = useTask((wanted: WcAccount) => Promise.try(async () => {
     if (wanted.uuid === account?.uuid)
       return
 
@@ -320,7 +321,7 @@ export function App(props: { channel: Channel }) {
     await channel.request({ method: "wc_connect", params: [wanted] })
   }).catch(Errors.display), [channel, account])
 
-  const onDisconnect = useCallback(() => Promise.try(async () => {
+  const onDisconnect = useTask(() => Promise.try(async () => {
     await channel.request({ method: "wc_disconnect", params: [] })
   }).catch(Errors.display), [channel])
 
@@ -412,7 +413,7 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
   const path = usePath()
   const hash = useHashSubpath(path)
 
-  const onClick = useCallback(() => {
+  const onClick = useTask(() => {
     connect(account)
   }, [connect, account])
 
@@ -495,7 +496,7 @@ export function DeletePrompt(props: { channel: Channel } & { account: WcAccount 
     close()
   }, [close])
 
-  const onDelete = useCallback(() => Promise.try(async () => {
+  const onDelete = useTask(() => Promise.try(async () => {
     await channel.request({ method: "wc_delete", params: [account] })
   }).catch(Errors.display), [channel, account])
 
