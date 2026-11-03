@@ -413,7 +413,7 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
   const path = usePath()
   const hash = useHashSubpath(path)
 
-  const onClick = useTask(() => {
+  const onClick = useCallback(() => {
     connect(account)
   }, [connect, account])
 
