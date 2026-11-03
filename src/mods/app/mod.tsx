@@ -16,21 +16,9 @@ import { RpcMessageInit } from "@hazae41/jsonrpc";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
-import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import React, { Fragment, useCallback, useDeferredValue, useEffect, useState } from "react";
 
 React;
-
-export function useBackground() {
-  const channel = useMemo(() => {
-    return new Channel()
-  }, [])
-
-  useEffect(() => void setInterval(() => {
-    channel.request<void>({ method: "ping" }).catch(console.error)
-  }, 1000), [channel])
-
-  return channel
-}
 
 export function ConnectPrompt(props: { channel: Channel } & { title: string } & { color: Nullable<string> } & { close(): void }) {
   const { channel, title, color, close: close1 } = props

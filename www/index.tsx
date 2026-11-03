@@ -6,19 +6,18 @@ import "@hazae41/disposable-stack-polyfill";
 
 import "@hazae41/request-idle-callback-polyfill";
 
+import { Channel } from "@/libs/channel/mod.ts";
 import { dirs, Lang } from "@/libs/lang/mod.ts";
-import { App, useBackground } from "@/mods/app/mod.tsx";
+import { App } from "@/mods/app/mod.tsx";
 import { PathProvider, useHashPath } from "@hazae41/chemin";
 import { Rewind } from "@hazae41/rewind";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { hydrateRoot } from "react-dom/client";
 
 React;
 
 function Body() {
   const path = useHashPath()
-
-  const channel = useBackground()
 
   const [client, setClient] = useState(false)
 
@@ -29,6 +28,10 @@ function Body() {
     document.documentElement.dir = dirs[lang]
 
     setClient(true)
+  }, [])
+
+  const channel = useMemo(() => {
+    return new Channel()
   }, [])
 
   if (!client)

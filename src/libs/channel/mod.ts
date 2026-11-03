@@ -13,6 +13,19 @@ export class Channel extends EventTarget {
 
     this.#port = this.#connect()
 
+    addEventListener("pageshow", (event) => {
+      const cached = event.persisted
+
+      if (!cached)
+        return
+
+      this.#port = this.#connect()
+    }, { passive: true })
+
+    setInterval(() => {
+      this.request({ method: "ping" }).catch(console.error)
+    }, 1000)
+
     return
   }
 
@@ -32,26 +45,29 @@ export class Channel extends EventTarget {
     super.removeEventListener(type, callback, options)
   }
 
-  reconnect() {
-    this.#port?.disconnect?.()
-
-    this.#port = this.#connect()
-
-    return
-  }
-
   #connect() {
     const port = chrome.runtime.connect()
 
-    /**
-     * Pass messages coming from the service worker
-     */
-    port.onMessage.addListener((message) => this.dispatchEvent(new MessageEvent("message", { data: message })))
+    const onMessage = (message: RpcMessageInit) => {
+      const data = message
 
-    /**
-     * Reload the page when the extension is reloaded
-     */
-    port.onDisconnect.addListener(() => location.reload())
+      this.dispatchEvent(new MessageEvent("message", { data }))
+
+      return
+    }
+
+    const onDisconnect = () => {
+      const error = chrome.runtime.lastError
+
+      if (error != null)
+        console.warn(error.message)
+
+      location.reload()
+    }
+
+    port.onMessage.addListener(onMessage)
+
+    port.onDisconnect.addListener(onDisconnect)
 
     return port
   }
@@ -68,9 +84,7 @@ export class Channel extends EventTarget {
     stack.defer(() => reject())
     promise.catch(() => { })
 
-    const onMessage = (event: MessageEvent<RpcMessageInit>) => {
-      const message = event.data
-
+    const onMessage = (message: RpcMessageInit) => {
       if ("method" in message === true)
         return
 
@@ -82,8 +96,23 @@ export class Channel extends EventTarget {
       resolve(response)
     }
 
-    this.addEventListener("message", onMessage, { passive: true })
-    stack.defer(() => this.removeEventListener("message", onMessage))
+    const onDisconnect = () => {
+      const error = chrome.runtime.lastError
+
+      if (error != null)
+        console.warn(error.message)
+
+      reject(error)
+    }
+
+    this.#port.onMessage.addListener(onMessage)
+    stack.defer(() => this.#port.onMessage.removeListener(onMessage))
+
+    this.#port.onDisconnect.addListener(onDisconnect)
+    stack.defer(() => this.#port.onDisconnect.removeListener(onDisconnect))
+
+    addEventListener("pagehide", reject, { passive: true })
+    stack.defer(() => removeEventListener("pagehide", reject))
 
     this.#port.postMessage(request)
 

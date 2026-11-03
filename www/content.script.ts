@@ -2,8 +2,9 @@
 
 /// <reference types="chrome" />
 
+import { chainlist } from "@/libs/chainlist/mod.ts";
 import { Channel } from "@/libs/channel/mod.ts";
-import { RpcErr, RpcError, RpcInvalidRequestError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponseInit } from "@hazae41/jsonrpc";
+import { RpcErr, RpcError, RpcInternalError, RpcInvalidRequestError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
 
 declare global {
 
@@ -34,8 +35,9 @@ namespace backend {
 
   export const channel = new Channel()
 
-  export async function request<T>(init: RpcRequestPreinit) {
-    return await channel.request<T>(init)
+  export async function request<T>(request: RpcRequestPreinit) {
+    const params = { chainId: `eip155:${frontend.chainId}`, request }
+    return await channel.request<T>({ method: "wc_sessionRequest", params })
   }
 
   channel.addEventListener("message", (event: MessageEvent<RpcMessageInit>) => {
@@ -51,25 +53,11 @@ namespace backend {
     return
   })
 
-  setInterval(() => {
-    channel.request({ method: "ping" }).catch(console.error)
-  }, 1000)
-
-  addEventListener("pagehide", (event) => {
-    if (!event.persisted)
-      return
-    console.debug("Freezing page")
-  }, { passive: true })
-
-  addEventListener("pageshow", (event) => {
-    if (!event.persisted)
-      return
-    channel.reconnect()
-  }, { passive: true })
-
 }
 
 namespace frontend {
+
+  export let chainId = 1
 
   const permissions: Record<string, Record<string, unknown>> = {}
 
@@ -105,39 +93,7 @@ namespace frontend {
 
       // NOOP
 
-      return await backend.request(request)
-    }
-
-    if (method === "eth_call") {
-      const _ = params
-
-      // NOOP
-
-      return await backend.request(request)
-    }
-
-    if (method === "eth_blockNumber") {
-      const _ = params
-
-      // NOOP
-
-      return await backend.request(request)
-    }
-
-    if (method === "eth_getBalance") {
-      const _ = params
-
-      // NOOP
-
-      return await backend.request(request)
-    }
-
-    if (method === "eth_estimateGas") {
-      const _ = params
-
-      // NOOP
-
-      return await backend.request(request)
+      return `0x${chainId.toString(16)}`
     }
 
     if (method === "eth_coinbase") {
@@ -173,19 +129,19 @@ namespace frontend {
     }
 
     if (method === "wallet_addEthereumChain") {
-      const _ = params
+      const [_] = params as [{ chainId: string }]
 
       // NOOP
 
-      return await backend.request(request)
+      return
     }
 
     if (method === "wallet_switchEthereumChain") {
-      const _ = params
+      const [chain] = params as [{ chainId: string }]
 
-      // NOOP
+      chainId = parseInt(chain.chainId, 16)
 
-      return await backend.request(request)
+      return
     }
 
     if (method === "wallet_getPermissions") {
@@ -308,6 +264,35 @@ namespace frontend {
       alert(`Open your wallet to sign the transaction`)
 
       return await backend.request(request)
+    }
+
+    if (method.startsWith("eth_")) {
+      const _ = params
+
+      const chain = chainlist.find(x => x.chainId === chainId)
+
+      if (chain == null)
+        throw new RpcInvalidRequestError()
+
+      const headers = { "Content-Type": "application/json" }
+
+      const body = JSON.stringify(request)
+      const http = await fetch(chain.rpc, { method: "POST", headers, body })
+
+      if (!http.ok)
+        throw new RpcInternalError()
+
+      const json = await http.json()
+
+      return RpcResponse.from(json).getOrThrow()
+    }
+
+    if (method === "web3_clientVersion") {
+      const _ = params
+
+      const version = chrome.runtime.getManifest().version
+
+      return `BrumeClick/${version}`
     }
 
     throw new RpcMethodNotFoundError()
