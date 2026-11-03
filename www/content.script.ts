@@ -120,7 +120,7 @@ namespace frontend {
       if (permissions["eth_accounts"] != null)
         return await backend.request(request)
 
-      if (!confirm(`I want to access your crypto accounts`))
+      if (!confirm(`I want to access your accounts`))
         throw new RpcInvalidRequestError()
 
       permissions["eth_accounts"] = {}
@@ -158,7 +158,7 @@ namespace frontend {
       if (requested["eth_accounts"] == null)
         throw new RpcInvalidRequestError()
 
-      if (!confirm(`I want to access your crypto accounts`))
+      if (!confirm(`I want to access your accounts`))
         throw new RpcInvalidRequestError()
 
       permissions["eth_accounts"] = {}
@@ -185,7 +185,7 @@ namespace frontend {
 
       if (onlyIfTrusted)
         throw new RpcInvalidRequestError()
-      if (!confirm(`I want to access your crypto accounts`))
+      if (!confirm(`I want to access your accounts`))
         throw new RpcInvalidRequestError()
 
       permissions["eth_accounts"] = {}
