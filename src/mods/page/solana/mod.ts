@@ -162,7 +162,7 @@ export class Provider extends EventEmitter {
       throw new RpcInternalError()
 
     const message58 = base58.encode(message)
-    const pubkey58 = this.publicKey.toString()
+    const pubkey58 = this.publicKey.toBase58()
 
     const params = { message: message58, pubkey: pubkey58 }
     const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
@@ -179,7 +179,7 @@ export class Provider extends EventEmitter {
       throw new RpcInternalError()
 
     const transaction64 = transaction.serialize().toBase64()
-    const pubkey58 = this.publicKey.toString()
+    const pubkey58 = this.publicKey.toBase58()
 
     const params = { transaction: transaction64, pubkey: pubkey58 }
     const result = await pipe.request<{ signature: string }>({ method: "solana_signTransaction", params })
@@ -296,7 +296,7 @@ export async function signTransaction(...inputs: { account: WalletAccount, trans
     const { account, transaction } = input
 
     const transaction64 = transaction.toBase64()
-    const pubkey58 = account.publicKey.toString()
+    const pubkey58 = base58.encode(account.publicKey)
 
     const params = { transaction: transaction64, pubkey: pubkey58 }
     const result = await pipe.request<{ signature: string }>({ method: "solana_signTransaction", params })
@@ -330,7 +330,7 @@ export async function signTransaction(...inputs: { account: WalletAccount, trans
       continue
     }
 
-    outputs.push({ transaction: signed })
+    outputs.push({ signedTransaction: signed })
   }
 
   return outputs
@@ -380,8 +380,8 @@ export function announce() {
   dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
 }
 
-// addEventListener("wallet-standard:app-ready", (event) => {
-//   event.detail.register(wallet)
-// }, { passive: true })
+addEventListener("wallet-standard:app-ready", (event) => {
+  event.detail.register(wallet)
+}, { passive: true })
 
-// announce()
+announce()
