@@ -1,7 +1,7 @@
 import { RpcMessageInit, RpcRequest, RpcRequestPreinit, RpcResponse } from "@hazae41/jsonrpc";
 
 export interface ChannelEventMap {
-  message: MessageEvent<RpcMessageInit>
+  message: CustomEvent<RpcMessageInit>
 }
 
 export class Channel extends EventTarget {
@@ -49,9 +49,9 @@ export class Channel extends EventTarget {
     const port = chrome.runtime.connect()
 
     const onMessage = (message: RpcMessageInit) => {
-      const data = message
+      const detail = message
 
-      this.dispatchEvent(new MessageEvent("message", { data }))
+      this.dispatchEvent(new CustomEvent("message", { detail }))
 
       return
     }

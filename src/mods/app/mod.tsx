@@ -38,8 +38,8 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
     return () => void channel.request<void>({ method: "wc_abandon" }).catch(console.error)
   }, [])
 
-  const onMessage = useCallback((event: MessageEvent<RpcMessageInit>) => {
-    const message = event.data
+  const onMessage = useCallback((event: CustomEvent<RpcMessageInit>) => {
+    const message = event.detail
 
     if ("method" in message === false)
       return
@@ -256,8 +256,8 @@ export function App(props: { channel: Channel }) {
 
   const [account, setAccount] = useState<WcAccount>()
 
-  const onMessage = useCallback((event: MessageEvent<RpcMessageInit>) => {
-    const message = event.data
+  const onMessage = useCallback((event: CustomEvent<RpcMessageInit>) => {
+    const message = event.detail
 
     if ("method" in message === false)
       return

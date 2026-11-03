@@ -31,17 +31,19 @@ declare global {
 
 }
 
+let chainId = 1
+
 namespace backend {
 
   export const channel = new Channel()
 
   export async function request<T>(request: RpcRequestPreinit) {
-    const params = { chainId: `eip155:${frontend.chainId}`, request }
+    const params = { chainId: `eip155:${chainId}`, request }
     return await channel.request<T>({ method: "wc_sessionRequest", params })
   }
 
-  channel.addEventListener("message", (event: MessageEvent<RpcMessageInit>) => {
-    const message = event.data
+  channel.addEventListener("message", (event: CustomEvent<RpcMessageInit>) => {
+    const message = event.detail
 
     if ("method" in message === false)
       return
@@ -56,8 +58,6 @@ namespace backend {
 }
 
 namespace frontend {
-
-  export let chainId = 1
 
   const permissions: Record<string, Record<string, unknown>> = {}
 
