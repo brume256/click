@@ -286,7 +286,7 @@ chrome.runtime.onConnect.addListener((script) => {
     const error = chrome.runtime.lastError
 
     if (error != null)
-      console.warn(error.message)
+      console.debug(error.message)
 
     stack.dispose()
   }
@@ -570,7 +570,7 @@ chrome.runtime.onConnect.addListener((panel) => {
     const error = chrome.runtime.lastError
 
     if (error != null)
-      console.warn(error.message)
+      console.debug(error.message)
 
     stack.dispose()
   }
