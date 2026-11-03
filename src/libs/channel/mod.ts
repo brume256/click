@@ -23,7 +23,7 @@ export class Channel extends EventTarget {
     }, { passive: true })
 
     setInterval(() => {
-      this.request({ method: "ping" }).catch(console.error)
+      this.request({ method: "ping" }).catch(() => { })
     }, 1000)
 
     return
