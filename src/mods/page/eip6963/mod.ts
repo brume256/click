@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-namespace
 
 import { icon } from "@/libs/icon/mod.ts";
-import { eip1193, Ethereum } from "@/mods/page/eip1193/mod.ts";
+import { eip1193, MetaMask } from "@/mods/page/eip1193/mod.ts";
 import { pipe } from "@/mods/page/pipe/mod.ts";
 
 declare global {
@@ -22,7 +22,7 @@ export interface EIP6963ProviderInfo {
 
 export interface EIP6963ProviderDetail {
   readonly info: EIP6963ProviderInfo
-  readonly provider: Ethereum
+  readonly provider: MetaMask
 }
 
 export interface EIP6963AnnounceProviderEvent extends CustomEvent {

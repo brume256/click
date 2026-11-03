@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any no-window
+// deno-lint-ignore-file no-explicit-any no-window no-namespace
 
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
@@ -13,7 +13,7 @@ import { EventEmitter } from "events";
 declare global {
 
   export interface Window {
-    solana: Provider
+    solana: Phantom
   }
 
 }
@@ -21,7 +21,7 @@ declare global {
 declare global {
 
   export interface Window {
-    phantom: { solana: Provider }
+    phantom: { solana: Phantom }
   }
 
 }
@@ -86,7 +86,7 @@ export interface TransactionLike {
 
 }
 
-export class Provider extends EventEmitter {
+export class Phantom extends EventEmitter {
 
   publicKey: Nullable<PublicKey> = null
 
@@ -234,154 +234,192 @@ declare global {
 
 }
 
-export const provider = new Provider()
+export namespace phantom {
 
-window.solana = provider
+  export const provider = new Phantom()
 
-window.phantom = { solana: provider }
+  window.solana = provider
 
-export async function connect(props: { silent?: boolean } = {}) {
-  const { silent } = props
+  window.phantom = { solana: provider }
 
-  const params = { onlyIfTrusted: silent }
-  const result = await pipe.request<string[]>({ method: "solana_connect", params })
-
-  const [address] = result
-
-  if (address == null)
-    throw new RpcInvalidRequestError()
-
-  const accounts = [new WalletAccount(address)]
-
-  wallet.accounts = accounts
-
-  return { accounts }
 }
 
-export async function disconnect() {
-  await pipe.request({ method: "solana_disconnect" })
+export namespace wallet {
 
-  wallet.accounts = []
+  const events = new EventEmitter()
 
-  return
-}
+  addEventListener("pipe:message", (event) => {
+    const { detail: request } = event
+    const { method, params } = request
 
-export async function signMessage(...inputs: { account: WalletAccount, message: Uint8Array }[]) {
-  const outputs = []
+    if (method === "solana_connect") {
+      const [address] = params as string[]
 
-  for (const input of inputs) {
-    const { account, message } = input
+      if (address == null)
+        return
 
-    const message58 = base58.encode(message)
-    const pubkey58 = base58.encode(account.publicKey)
+      const accounts = [new WalletAccount(address)]
 
-    const params = { message: message58, pubkey: pubkey58 }
-    const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
+      wallet.accounts = accounts
 
-    const signature = base58.decode(result.signature)
+      events.emit("change", { accounts })
 
-    outputs.push({ signature, signedMessage: message, signatureType: "ed25519" })
+      return
+    }
+
+    if (method === "solana_disconnect") {
+      wallet.accounts = []
+
+      events.emit("change", { accounts: [] })
+
+      return
+    }
+
+    return
+  }, { passive: true })
+
+  export function on(name: string, listener: EventListener) {
+    events.on(name, listener)
+    return () => events.off(name, listener)
   }
 
-  return outputs
-}
+  export async function connect(props: { silent?: boolean } = {}) {
+    const { silent } = props
 
-/*
- * Only supports legacy and v0 transactions
- */
-export async function signTransaction(...inputs: { account: WalletAccount, transaction: Uint8Array }[]) {
-  const outputs = []
+    const params = { onlyIfTrusted: silent }
+    const result = await pipe.request<string[]>({ method: "solana_connect", params })
 
-  for (const input of inputs) {
-    const { account, transaction } = input
+    const [address] = result
 
-    const transaction64 = transaction.toBase64()
-    const pubkey58 = base58.encode(account.publicKey)
+    if (address == null)
+      throw new RpcInvalidRequestError()
 
-    const params = { transaction: transaction64, pubkey: pubkey58 }
-    const result = await pipe.request<{ signature: string }>({ method: "solana_signTransaction", params })
+    const accounts = [new WalletAccount(address)]
 
-    const signature = base58.decode(result.signature)
+    wallet.accounts = accounts
 
-    const signed = new Uint8Array(transaction)
-    const cursor = new Cursor(signed)
+    return { accounts }
+  }
 
-    const sigcount = cursor.readUint8()
-    const sigstart = cursor.offset
+  export async function disconnect() {
+    await pipe.request({ method: "solana_disconnect" })
 
-    cursor.offset += sigcount * 64
+    wallet.accounts = []
 
-    const version = cursor.getUint8()
+    return
+  }
 
-    cursor.offset += version === 0x80 ? 1 : 0
-    cursor.offset += 3
+  export async function signMessage(...inputs: { account: WalletAccount, message: Uint8Array }[]) {
+    const outputs = []
 
-    const acccount = cursor.readUint8()
-    const accuntil = cursor.offset + acccount * 32
+    for (const input of inputs) {
+      const { account, message } = input
 
-    for (let accindex = 0; cursor.offset < accuntil; accindex++) {
-      const accbytes = cursor.read(32)
+      const message58 = base58.encode(message)
+      const pubkey58 = base58.encode(account.publicKey)
 
-      if (base58.encode(accbytes) !== pubkey58)
+      const params = { message: message58, pubkey: pubkey58 }
+      const result = await pipe.request<{ signature: string }>({ method: "solana_signMessage", params })
+
+      const signature = base58.decode(result.signature)
+
+      outputs.push({ signature, signedMessage: message, signatureType: "ed25519" })
+    }
+
+    return outputs
+  }
+
+  export async function signTransaction(...inputs: { account: WalletAccount, transaction: Uint8Array }[]) {
+    const outputs = []
+
+    for (const input of inputs) {
+      const { account, transaction } = input
+
+      const transaction64 = transaction.toBase64()
+      const pubkey58 = base58.encode(account.publicKey)
+
+      const params = { transaction: transaction64, pubkey: pubkey58 }
+      const result = await pipe.request<{ signature: string }>({ method: "solana_signTransaction", params })
+
+      const signature = base58.decode(result.signature)
+
+      const signed = new Uint8Array(transaction)
+      const cursor = new Cursor(signed)
+
+      const sigcount = cursor.readUint8()
+      const sigstart = cursor.offset
+
+      cursor.offset += sigcount * 64
+
+      const version = cursor.getUint8()
+
+      cursor.offset += version === 0x80 ? 1 : 0
+      cursor.offset += 3
+
+      const acccount = cursor.readUint8()
+      const accuntil = cursor.offset + acccount * 32
+
+      for (let accindex = 0; cursor.offset < accuntil; accindex++) {
+        const accbytes = cursor.read(32)
+
+        if (base58.encode(accbytes) !== pubkey58)
+          continue
+
+        signed.set(signature, sigstart + accindex * 64)
+
         continue
+      }
 
-      signed.set(signature, sigstart + accindex * 64)
-
-      continue
+      outputs.push({ signedTransaction: signed })
     }
 
-    outputs.push({ signedTransaction: signed })
+    return outputs
   }
 
-  return outputs
-}
+  export const wallet: WalletLike = {
+    version: "1.0.0",
 
-export const wallet: WalletLike = {
-  version: "1.0.0",
+    name: pipe.requestSync<string>({ method: "chrome_name" }),
+    icon: icon,
 
-  name: pipe.requestSync<string>({ method: "chrome_name" }),
-  icon: icon,
+    chains: ["solana:mainnet", "solana:devnet"],
 
-  chains: ["solana:mainnet", "solana:devnet"],
+    accounts: [],
 
-  accounts: [],
-
-  features: {
-    "standard:connect": {
-      version: "1.0.0",
-      connect
-    },
-    "standard:disconnect": {
-      version: "1.0.0",
-      disconnect
-    },
-    "standard:events": {
-      version: "1.0.0",
-      on: (name: string, listener: (...args: any[]) => void) => {
-        // TODO
-        provider.on(name, listener)
-        return () => provider.off(name, listener)
+    features: {
+      "standard:connect": {
+        version: "1.0.0",
+        connect
       },
-    },
-    "solana:signMessage": {
-      version: "1.0.0",
-      signMessage
-    },
-    "solana:signTransaction": {
-      version: "1.0.0",
-      supportedTransactionVersions: ["legacy", 0],
-      signTransaction
+      "standard:disconnect": {
+        version: "1.0.0",
+        disconnect
+      },
+      "standard:events": {
+        version: "1.0.0",
+        on
+      },
+      "solana:signMessage": {
+        version: "1.0.0",
+        signMessage
+      },
+      "solana:signTransaction": {
+        version: "1.0.0",
+        supportedTransactionVersions: ["legacy", 0],
+        signTransaction
+      }
     }
   }
+
+  export function announce() {
+    const detail = (app: WalletAppLike) => app.register(wallet)
+    dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
+  }
+
+  addEventListener("wallet-standard:app-ready", (event) => {
+    event.detail.register(wallet)
+  }, { passive: true })
+
+  announce()
+
 }
-
-export function announce() {
-  const detail = (app: WalletAppLike) => app.register(wallet)
-  dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail }))
-}
-
-addEventListener("wallet-standard:app-ready", (event) => {
-  event.detail.register(wallet)
-}, { passive: true })
-
-announce()

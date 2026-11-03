@@ -7,12 +7,12 @@ import { EventEmitter } from "events";
 declare global {
 
   export interface Window {
-    ethereum: Ethereum
+    ethereum: MetaMask
   }
 
 }
 
-export class Ethereum extends EventEmitter {
+export class MetaMask extends EventEmitter {
 
   constructor() {
     super()
@@ -96,7 +96,7 @@ export class Ethereum extends EventEmitter {
 
 export namespace eip1193 {
 
-  export const provider = new Ethereum()
+  export const provider = new MetaMask()
 
   window.ethereum = provider
 
