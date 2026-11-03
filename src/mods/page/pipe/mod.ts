@@ -72,9 +72,9 @@ export namespace pipe {
     dispatchEvent(new FormDataEvent("pipe:requestSync", { formData }))
 
     const rawresponse = formData.get("response") as string
-    const rpcresponse = RpcResponse.from<T>(JSON.parse(rawresponse))
+    const rpcresponse = RpcResponse.from(JSON.parse(rawresponse))
 
-    return rpcresponse.getOrThrow()
+    return rpcresponse.getOrThrow() as T
   }
 
 }
