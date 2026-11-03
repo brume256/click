@@ -7,7 +7,7 @@ import "@hazae41/disposable-stack-polyfill";
 import "@hazae41/request-idle-callback-polyfill";
 
 import { dirs, Lang } from "@/libs/lang/mod.ts";
-import { App, useBackground, useLocation } from "@/mods/app/mod.tsx";
+import { App, useBackground } from "@/mods/app/mod.tsx";
 import { PathProvider, useHashPath } from "@hazae41/chemin";
 import { Rewind } from "@hazae41/rewind";
 import React, { useEffect, useState } from "react";
@@ -19,7 +19,6 @@ function Body() {
   const path = useHashPath()
 
   const channel = useBackground()
-  const location = useLocation(channel)
 
   const [client, setClient] = useState(false)
 
@@ -34,12 +33,10 @@ function Body() {
 
   if (!client)
     return null
-  if (!location)
-    return null
 
   return <PathProvider value={path}>
     <div className="h-full w-full overflow-y-auto animate-opacity-in text-base">
-      <App channel={channel} location={location} />
+      <App channel={channel} />
     </div>
   </PathProvider>
 }

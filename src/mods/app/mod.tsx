@@ -11,7 +11,7 @@ import { Outline } from "@/libs/heroicons/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePath, usePathContext } from "@hazae41/chemin";
-import { RpcMessageInit, RpcRequest } from "@hazae41/jsonrpc";
+import { RpcMessageInit } from "@hazae41/jsonrpc";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
@@ -43,44 +43,6 @@ export function useBackground() {
   return channel
 }
 
-export function useLocation(channel: Channel) {
-  const [location, setLocation] = useState<string>()
-
-  const onMessage = useCallback((message: RpcMessageInit) => {
-    if ("method" in message === false)
-      return
-
-    const { method, params } = RpcRequest.from(message)
-
-    if (method === "chrome_locationChanged") {
-      const [location] = params as [string]
-
-      setLocation(location)
-
-      return
-    }
-
-    return
-  }, [])
-
-  useEffect(() => {
-    channel.port.onMessage.addListener(onMessage)
-    return () => channel.port.onMessage.removeListener(onMessage)
-  }, [channel, onMessage])
-
-  useEffect(() => {
-    channel.request<string>({ method: "chrome_location" }).then(setLocation)
-  }, [channel])
-
-  return useMemo(() => {
-    try {
-      return new URL(location!)
-    } catch {
-      return undefined
-    }
-  }, [location])
-}
-
 export function ConnectPrompt(props: { channel: Channel } & { title: string } & { color: Nullable<string> } & { close(): void }) {
   const { channel, title, color, close: close1 } = props
 
@@ -103,7 +65,7 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
     if ("method" in message === false)
       return
 
-    const { method, params } = RpcRequest.from(message)
+    const { method, params } = message
 
     if (method === "wc_pairingChanged") {
       const [code] = params as [string]
@@ -306,7 +268,7 @@ export function CreateWindow(props: { channel: Channel }) {
   </div>
 }
 
-export function App(props: { channel: Channel } & { location: URL }) {
+export function App(props: { channel: Channel }) {
   const { channel } = props
 
   const path = usePathContext().getOrThrow()
@@ -319,7 +281,7 @@ export function App(props: { channel: Channel } & { location: URL }) {
     if ("method" in message === false)
       return
 
-    const { method, params } = RpcRequest.from(message)
+    const { method, params } = message
 
     if (method === "wc_accountChanged") {
       const [account] = params as [WcAccount]
@@ -534,7 +496,7 @@ export function DeletePrompt(props: { channel: Channel } & { account: WcAccount 
   }, [close])
 
   const onDelete = useCallback(() => Promise.try(async () => {
-    await channel.request(new RpcRequest(crypto.randomUUID(), "wc_delete", [account]))
+    await channel.request({ method: "wc_delete", params: [account] })
   }).catch(Errors.display), [channel, account])
 
   return <div className="flex flex-col grow p-6 text-base">

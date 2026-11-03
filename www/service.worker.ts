@@ -18,7 +18,7 @@ class WcAccountAndSession {
 
 let current: Nullable<WcAccountAndSession> = null
 
-const origins = new Map<chrome.runtime.Port, string>()
+const scripts = new Set<chrome.runtime.Port>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
@@ -26,10 +26,10 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
  * Content script
  */
 
-chrome.runtime.onConnect.addListener((port) => {
+chrome.runtime.onConnect.addListener((script) => {
   const stack = new DisposableStack()
 
-  const { sender } = port
+  const { sender } = script
 
   if (sender == null)
     return
@@ -226,7 +226,7 @@ chrome.runtime.onConnect.addListener((port) => {
     }
 
     if (method === "solana_disconnect") {
-      return port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_disconnect", undefined))
+      return script.postMessage({ method: "solana_disconnect" })
     }
 
     if (method === "solana_signMessage") {
@@ -262,7 +262,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (request.method !== "ping")
         console.debug("<-", response)
 
-      Promise.try(() => port.postMessage(response)).catch(() => { })
+      Promise.try(() => script.postMessage(response)).catch(() => { })
 
       return
     } catch (error: unknown) {
@@ -274,7 +274,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       console.debug("<-", response)
 
-      Promise.try(() => port.postMessage(response)).catch(() => { })
+      Promise.try(() => script.postMessage(response)).catch(() => { })
 
       return
     }
@@ -282,14 +282,14 @@ chrome.runtime.onConnect.addListener((port) => {
 
   const onDisconnect = () => stack.dispose()
 
-  port.onMessage.addListener(onMessage)
-  port.onDisconnect.addListener(onDisconnect)
+  script.onMessage.addListener(onMessage)
+  script.onDisconnect.addListener(onDisconnect)
 
-  stack.defer(() => port.onMessage.removeListener(onMessage))
-  stack.defer(() => port.onDisconnect.removeListener(onDisconnect))
+  stack.defer(() => script.onMessage.removeListener(onMessage))
+  stack.defer(() => script.onDisconnect.removeListener(onDisconnect))
 
-  origins.set(port, origin)
-  stack.defer(() => origins.delete(port))
+  scripts.add(script)
+  stack.defer(() => scripts.delete(script))
 
   return
 })
@@ -298,10 +298,10 @@ chrome.runtime.onConnect.addListener((port) => {
  * Side panel
  */
 
-chrome.runtime.onConnect.addListener((port) => {
+chrome.runtime.onConnect.addListener((panel) => {
   const stack = new DisposableStack()
 
-  if (port.sender?.tab?.id != null)
+  if (panel.sender?.tab?.id != null)
     return
 
   let proposal = new AbortController()
@@ -311,15 +311,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
     if (method === "ping")
       return
-
-    if (method === "chrome_location") {
-      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
-
-      if (tab.url == null)
-        return
-
-      return tab.url
-    }
 
     if (method === "wc_propose") {
       const [title, color] = params as [string, string]
@@ -362,7 +353,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       const pairing = await WcPairing.generate(client)
 
-      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_pairingChanged", [pairing.url]))
+      panel.postMessage({ method: "wc_pairingChanged", params: [pairing.url] })
 
       const upgraded = Promise.withResolvers<WcSession>()
       stack.defer(() => upgraded.reject())
@@ -417,7 +408,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await chrome.storage.local.set({ accounts })
 
-      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountsChanged", accounts))
+      panel.postMessage({ method: "wc_accountsChanged", params: accounts })
 
       return
     }
@@ -450,7 +441,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       await chrome.storage.local.set({ accounts })
 
-      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountsChanged", accounts))
+      panel.postMessage({ method: "wc_accountsChanged", params: accounts })
 
       return
     }
@@ -506,12 +497,12 @@ chrome.runtime.onConnect.addListener((port) => {
 
       current = new WcAccountAndSession(account, session)
 
-      for (const [port] of origins) {
-        port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_connect", [account.address.solana]))
-        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", [account.address.eip155]))
+      for (const script of scripts) {
+        script.postMessage({ method: "solana_connect", params: [account.address.solana] })
+        script.postMessage({ method: "eth_accountsChanged", params: [account.address.eip155] })
       }
 
-      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", [account]))
+      panel.postMessage({ method: "wc_accountChanged", params: [account] })
 
       return
     }
@@ -525,12 +516,12 @@ chrome.runtime.onConnect.addListener((port) => {
 
       current = null
 
-      for (const [port] of origins) {
-        port.postMessage(new RpcRequest(crypto.randomUUID(), "solana_disconnect", undefined))
-        port.postMessage(new RpcRequest(crypto.randomUUID(), "eth_accountsChanged", []))
+      for (const script of scripts) {
+        script.postMessage({ method: "solana_disconnect", params: undefined })
+        script.postMessage({ method: "eth_accountsChanged", params: [] })
       }
 
-      port.postMessage(new RpcRequest(crypto.randomUUID(), "wc_accountChanged", []))
+      panel.postMessage({ method: "wc_accountChanged", params: [] })
 
       return
     }
@@ -550,7 +541,7 @@ chrome.runtime.onConnect.addListener((port) => {
       if (request.method !== "ping")
         console.debug("<-", response)
 
-      Promise.try(() => port.postMessage(response)).catch(() => { })
+      Promise.try(() => panel.postMessage(response)).catch(() => { })
 
       return
     } catch (error: unknown) {
@@ -562,7 +553,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
       console.debug("<-", response)
 
-      Promise.try(() => port.postMessage(response)).catch(() => { })
+      Promise.try(() => panel.postMessage(response)).catch(() => { })
 
       return
     }
@@ -570,39 +561,11 @@ chrome.runtime.onConnect.addListener((port) => {
 
   const onDisconnect = () => stack.dispose()
 
-  port.onMessage.addListener(onMessage)
-  port.onDisconnect.addListener(onDisconnect)
+  panel.onMessage.addListener(onMessage)
+  panel.onDisconnect.addListener(onDisconnect)
 
-  stack.defer(() => port.onMessage.removeListener(onMessage))
-  stack.defer(() => port.onDisconnect.removeListener(onDisconnect))
-
-  const onActivated = async ({ tabId }: chrome.tabs.OnActivatedInfo) => {
-    const tab = await chrome.tabs.get(tabId)
-
-    if (!tab.active)
-      return
-    if (!tab.url)
-      return
-
-    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_locationChanged", [tab.url]))
-  }
-
-  const onUpdated = async (tabId: number) => {
-    const tab = await chrome.tabs.get(tabId)
-
-    if (!tab.active)
-      return
-    if (!tab.url)
-      return
-
-    port.postMessage(new RpcRequest(crypto.randomUUID(), "chrome_locationChanged", [tab.url]))
-  }
-
-  chrome.tabs.onActivated.addListener(onActivated)
-  chrome.tabs.onUpdated.addListener(onUpdated)
-
-  stack.defer(() => chrome.tabs.onActivated.removeListener(onActivated))
-  stack.defer(() => chrome.tabs.onUpdated.removeListener(onUpdated))
+  stack.defer(() => panel.onMessage.removeListener(onMessage))
+  stack.defer(() => panel.onDisconnect.removeListener(onDisconnect))
 
   return
 })

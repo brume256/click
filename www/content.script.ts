@@ -71,9 +71,9 @@ namespace backend {
     if ("method" in message === false)
       return
 
-    const request = RpcRequest.from(message)
+    const { method, params } = message
 
-    frontend.message(request)
+    frontend.message({ method, params })
 
     return
   })
@@ -88,12 +88,12 @@ namespace frontend {
 
   const permissions: Record<string, Record<string, unknown>> = {}
 
-  export function message(init: RpcRequestPreinit) {
-    const { method, params } = init
+  export function message(message: RpcRequestPreinit) {
+    const { method, params } = message
 
-    const request = new RpcRequest(crypto.randomUUID(), method, params)
+    const detail = { method, params }
 
-    dispatchEvent(new CustomEvent("pipe:message", { detail: request }))
+    dispatchEvent(new CustomEvent("pipe:message", { detail }))
   }
 
   export function routeSync(request: RpcRequest) {
