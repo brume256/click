@@ -21,25 +21,13 @@ import React, { Fragment, useCallback, useDeferredValue, useEffect, useMemo, use
 React;
 
 export function useBackground() {
-  const port = useMemo(() => {
-    return chrome.runtime.connect()
-  }, [])
-
-  useEffect(() => () => {
-    port.disconnect()
-  }, [])
-
   const channel = useMemo(() => {
-    return new Channel(port)
-  }, [port])
+    return new Channel()
+  }, [])
 
-  const interval = useMemo(() => setInterval(() => {
-    channel.request<void>({ method: "ping" }).catch(() => clearInterval(interval))
+  useEffect(() => void setInterval(() => {
+    channel.request<void>({ method: "ping" }).catch(console.error)
   }, 1000), [channel])
-
-  useEffect(() => () => {
-    clearInterval(interval)
-  }, [channel])
 
   return channel
 }
@@ -62,7 +50,9 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
     return () => void channel.request<void>({ method: "wc_abandon" }).catch(console.error)
   }, [])
 
-  const onMessage = useCallback((message: RpcMessageInit) => {
+  const onMessage = useCallback((event: MessageEvent<RpcMessageInit>) => {
+    const message = event.data
+
     if ("method" in message === false)
       return
 
@@ -103,8 +93,8 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
   }, [])
 
   useEffect(() => {
-    channel.port.onMessage.addListener(onMessage)
-    return () => channel.port.onMessage.removeListener(onMessage)
+    channel.addEventListener("message", onMessage, { passive: true })
+    return () => channel.removeEventListener("message", onMessage)
   }, [channel, onMessage])
 
   useEffect(() => () => {
@@ -278,7 +268,9 @@ export function App(props: { channel: Channel }) {
 
   const [account, setAccount] = useState<WcAccount>()
 
-  const onMessage = useCallback((message: RpcMessageInit) => {
+  const onMessage = useCallback((event: MessageEvent<RpcMessageInit>) => {
+    const message = event.data
+
     if ("method" in message === false)
       return
 
@@ -304,8 +296,8 @@ export function App(props: { channel: Channel }) {
   }, [])
 
   useEffect(() => {
-    channel.port.onMessage.addListener(onMessage)
-    return () => channel.port.onMessage.removeListener(onMessage)
+    channel.addEventListener("message", onMessage, { passive: true })
+    return () => channel.removeEventListener("message", onMessage)
   }, [channel, onMessage])
 
   useEffect(() => {

@@ -2,7 +2,8 @@
 
 /// <reference types="chrome" />
 
-import { RpcErr, RpcError, RpcInvalidRequestError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponse, RpcResponseInit } from "@hazae41/jsonrpc";
+import { Channel } from "@/libs/channel/mod.ts";
+import { RpcErr, RpcError, RpcInvalidRequestError, RpcMessageInit, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit, RpcResponseInit } from "@hazae41/jsonrpc";
 
 declare global {
 
@@ -31,43 +32,15 @@ declare global {
 
 namespace backend {
 
-  export const port = chrome.runtime.connect()
+  export const channel = new Channel()
 
   export async function request<T>(init: RpcRequestPreinit) {
-    using stack = new DisposableStack()
-
-    const { method, params } = init
-
-    const request = new RpcRequest(crypto.randomUUID(), method, params)
-
-    const { promise, resolve, reject } = Promise.withResolvers<RpcResponse>()
-
-    stack.defer(() => reject())
-    promise.catch(() => { })
-
-    const onMessage = (message: RpcMessageInit) => {
-      if ("method" in message === true)
-        return
-
-      const response = RpcResponse.from(message)
-
-      if (response.id !== request.id)
-        return
-
-      resolve(response)
-    }
-
-    port.onMessage.addListener(onMessage)
-    stack.defer(() => port.onMessage.removeListener(onMessage))
-
-    port.postMessage(request)
-
-    const response = await promise
-
-    return response.getOrThrow() as T
+    return await channel.request<T>(init)
   }
 
-  port.onMessage.addListener((message: RpcMessageInit) => {
+  channel.addEventListener("message", (event: MessageEvent<RpcMessageInit>) => {
+    const message = event.data
+
     if ("method" in message === false)
       return
 
@@ -78,8 +51,8 @@ namespace backend {
     return
   })
 
-  const interval = setInterval(() => {
-    request({ method: "ping" }).catch(() => clearInterval(interval))
+  setInterval(() => {
+    channel.request({ method: "ping" }).catch(console.error)
   }, 1000)
 
 }

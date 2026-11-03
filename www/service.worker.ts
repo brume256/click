@@ -18,6 +18,8 @@ class WcAccountAndSession {
 
 let current: Nullable<WcAccountAndSession> = null
 
+let propose: Nullable<AbortController> = null
+
 const scripts = new Set<chrome.runtime.Port>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
@@ -304,8 +306,6 @@ chrome.runtime.onConnect.addListener((panel) => {
   if (panel.sender?.tab?.id != null)
     return
 
-  let proposal = new AbortController()
-
   const route = async (request: RpcRequest) => {
     const { method, params } = request
 
@@ -320,7 +320,7 @@ chrome.runtime.onConnect.addListener((panel) => {
       let success = false
 
       const aborter = new AbortController()
-      proposal = aborter
+      propose = aborter
       const { signal } = aborter
 
       const cleaner = new AbortController()
@@ -416,7 +416,7 @@ chrome.runtime.onConnect.addListener((panel) => {
     if (method === "wc_abandon") {
       const _ = params
 
-      proposal.abort()
+      propose?.abort()
 
       return
     }
