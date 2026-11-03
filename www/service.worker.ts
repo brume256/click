@@ -116,7 +116,7 @@ chrome.runtime.onConnect.addListener((script) => {
     if (method === "solana_disconnect") {
       const _ = params
 
-      script.postMessage({ method: "solana_disconnect" })
+      Promise.try(() => script.postMessage({ method: "solana_disconnect" })).catch(() => { })
 
       return
     }
@@ -277,7 +277,7 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       const pairing = await WcPairing.generate(client)
 
-      panel.postMessage({ method: "wc_pairingChanged", params: [pairing.url] })
+      Promise.try(() => panel.postMessage({ method: "wc_pairingChanged", params: [pairing.url] })).catch(() => { })
 
       const upgraded = Promise.withResolvers<WcSession>()
       stack.defer(() => upgraded.reject())
@@ -332,7 +332,7 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       await chrome.storage.local.set({ accounts })
 
-      panel.postMessage({ method: "wc_accountsChanged", params: accounts })
+      Promise.try(() => panel.postMessage({ method: "wc_accountsChanged", params: accounts })).catch(() => { })
 
       return
     }
@@ -365,7 +365,7 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       await chrome.storage.local.set({ accounts })
 
-      panel.postMessage({ method: "wc_accountsChanged", params: accounts })
+      Promise.try(() => panel.postMessage({ method: "wc_accountsChanged", params: accounts })).catch(() => { })
 
       return
     }
@@ -422,11 +422,11 @@ chrome.runtime.onConnect.addListener((panel) => {
       current = new WcAccountAndSession(account, session)
 
       for (const script of scripts) {
-        script.postMessage({ method: "solana_connect", params: [account.address.solana] })
-        script.postMessage({ method: "eth_accountsChanged", params: [account.address.eip155] })
+        Promise.try(() => script.postMessage({ method: "solana_connect", params: [account.address.solana] })).catch(() => { })
+        Promise.try(() => script.postMessage({ method: "eth_accountsChanged", params: [account.address.eip155] })).catch(() => { })
       }
 
-      panel.postMessage({ method: "wc_accountChanged", params: [account] })
+      Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [account] })).catch(() => { })
 
       return
     }
@@ -441,11 +441,11 @@ chrome.runtime.onConnect.addListener((panel) => {
       current = null
 
       for (const script of scripts) {
-        script.postMessage({ method: "solana_disconnect", params: undefined })
-        script.postMessage({ method: "eth_accountsChanged", params: [] })
+        Promise.try(() => script.postMessage({ method: "solana_disconnect", params: undefined })).catch(() => { })
+        Promise.try(() => script.postMessage({ method: "eth_accountsChanged", params: [] })).catch(() => { })
       }
 
-      panel.postMessage({ method: "wc_accountChanged", params: [] })
+      Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [] })).catch(() => { })
 
       return
     }
