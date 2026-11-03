@@ -55,6 +55,12 @@ namespace backend {
     channel.request({ method: "ping" }).catch(console.error)
   }, 1000)
 
+  addEventListener("pagehide", (event) => {
+    if (!event.persisted)
+      return
+    console.debug("Freezing page")
+  }, { passive: true })
+
   addEventListener("pageshow", (event) => {
     if (!event.persisted)
       return
@@ -218,13 +224,15 @@ namespace frontend {
     if (method === "solana_connect") {
       const { onlyIfTrusted } = params as { onlyIfTrusted?: boolean }
 
-      if (permissions["solana_connect"] != null)
+      if (permissions["eth_accounts"] != null)
         return await backend.request(request)
 
       if (onlyIfTrusted)
         throw new RpcInvalidRequestError()
       if (!confirm(`I want to access your crypto accounts`))
         throw new RpcInvalidRequestError()
+
+      permissions["eth_accounts"] = {}
 
       return await backend.request(request)
     }

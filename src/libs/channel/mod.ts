@@ -43,9 +43,15 @@ export class Channel extends EventTarget {
   #connect() {
     const port = chrome.runtime.connect()
 
+    /**
+     * Pass messages coming from the service worker
+     */
     port.onMessage.addListener((message) => this.dispatchEvent(new MessageEvent("message", { data: message })))
 
-    port.onDisconnect.addListener(() => console.warn("Port disconnected"))
+    /**
+     * Reload the page when the extension is reloaded
+     */
+    port.onDisconnect.addListener(() => location.reload())
 
     return port
   }
@@ -62,7 +68,9 @@ export class Channel extends EventTarget {
     stack.defer(() => reject())
     promise.catch(() => { })
 
-    const onMessage = (message: RpcMessageInit) => {
+    const onMessage = (event: MessageEvent<RpcMessageInit>) => {
+      const message = event.data
+
       if ("method" in message === true)
         return
 
@@ -74,8 +82,8 @@ export class Channel extends EventTarget {
       resolve(response)
     }
 
-    this.#port.onMessage.addListener(onMessage)
-    stack.defer(() => this.#port.onMessage.removeListener(onMessage))
+    this.addEventListener("message", onMessage, { passive: true })
+    stack.defer(() => this.removeEventListener("message", onMessage))
 
     this.#port.postMessage(request)
 
