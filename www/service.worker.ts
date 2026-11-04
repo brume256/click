@@ -3,15 +3,83 @@
 import { WcAccount } from "@/libs/account/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
-import { RpcErr, RpcError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit } from "@hazae41/jsonrpc";
+import { RpcErr, RpcError, RpcInternalError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit } from "@hazae41/jsonrpc";
 import { IrnClient, WalletConnect, WcChannel, WcInvalidMethodError, WcPairing, WcRequest, WcSession, WcSessionEventParams, WcSessionRequestParams, WcSessionSettleParams } from "@hazae41/latrine";
 
 class WcAccountAndSession {
 
-  constructor(
-    readonly account: WcAccount,
-    readonly session: WcSession
-  ) { }
+  readonly account: WcAccount
+
+  #session: Nullable<WcSession> = null
+
+  #closing = false
+
+  constructor(account: WcAccount) {
+    this.account = account
+  }
+
+  get session() {
+    return this.#session
+  }
+
+  disconnect() {
+    this.#closing = true
+
+    this.session?.channel.client.close()
+
+    return
+  }
+
+  async connect() {
+    await using stack = new AsyncDisposableStack()
+
+    let success = false
+
+    const { jwk, tpc, key } = this.account.details
+
+    const sticky = Uint8Array.fromBase64(jwk)
+    const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
+
+    stack.defer(() => success ? undefined : client.close())
+
+    const channel = new WcChannel(client, tpc, Uint8Array.fromBase64(key))
+    const session = new WcSession(channel)
+
+    const onEvent = (data: WcSessionEventParams) => {
+      console.debug("Session event", data)
+
+      return
+    }
+
+    const onRequest = (data: WcSessionRequestParams<unknown>) => {
+      console.debug("Session request", data)
+
+      throw new WcInvalidMethodError()
+    }
+
+    const onClose = () => {
+      this.#session = null
+
+      console.debug("Session closed")
+
+      if (this.#closing)
+        return
+
+      this.connect().catch(console.error)
+    }
+
+    session.addEventListener("event", (event) => onEvent(event.data), { signal: session.closing })
+    session.addEventListener("request", (event) => event.respondWith(onRequest(event.data)), { signal: session.closing })
+    session.addEventListener("close", onClose, { signal: session.closing })
+
+    await session.open()
+
+    success = true
+
+    this.#session = session
+
+    return session
+  }
 
 }
 
@@ -82,6 +150,8 @@ chrome.runtime.onConnect.addListener((script) => {
 
       if (current == null)
         throw new RpcInvalidRequestError()
+      if (current.session == null)
+        throw new RpcInternalError()
 
       return await current.session.request({ chainId, request })
     }
@@ -91,6 +161,8 @@ chrome.runtime.onConnect.addListener((script) => {
 
       if (current == null)
         throw new RpcInvalidRequestError()
+      if (current.session == null)
+        throw new RpcInternalError()
 
       return await current.session.request({ chainId, request })
     }
@@ -100,6 +172,8 @@ chrome.runtime.onConnect.addListener((script) => {
 
       if (current == null)
         throw new RpcInvalidRequestError()
+      if (current.session == null)
+        throw new RpcInternalError()
 
       return await current.session.request({ chainId, request })
     }
@@ -126,6 +200,8 @@ chrome.runtime.onConnect.addListener((script) => {
 
       if (current == null)
         throw new RpcInvalidRequestError()
+      if (current.session == null)
+        throw new RpcInternalError()
 
       return await current.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
     }
@@ -135,6 +211,8 @@ chrome.runtime.onConnect.addListener((script) => {
 
       if (current == null)
         throw new RpcInvalidRequestError()
+      if (current.session == null)
+        throw new RpcInternalError()
 
       return await current.session.request({ chainId: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp", request })
     }
@@ -385,41 +463,11 @@ chrome.runtime.onConnect.addListener((panel) => {
       if (current != null)
         throw new RpcInvalidRequestError()
 
-      await using stack = new AsyncDisposableStack()
+      const session = new WcAccountAndSession(account)
 
-      let success = false
+      await session.connect()
 
-      const { jwk, tpc, key } = account.details
-
-      const sticky = Uint8Array.fromBase64(jwk)
-      const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
-
-      stack.defer(() => success ? undefined : client.close())
-
-      const channel = new WcChannel(client, tpc, Uint8Array.fromBase64(key))
-      const session = new WcSession(channel)
-
-      const onEvent = (data: WcSessionEventParams) => {
-        console.debug("Session event", data)
-
-        return
-      }
-
-      const onRequest = (data: WcSessionRequestParams<unknown>) => {
-        console.debug("Session request", data)
-
-        throw new WcInvalidMethodError()
-      }
-
-      session.addEventListener("event", event => onEvent(event.data), { signal: session.closing })
-      session.addEventListener("request", event => event.respondWith(onRequest(event.data)), { signal: session.closing })
-      session.addEventListener("close", () => console.debug("Session closed"), { signal: session.closing })
-
-      await session.open()
-
-      success = true
-
-      current = new WcAccountAndSession(account, session)
+      current = session
 
       for (const script of scripts) {
         Promise.try(() => script.postMessage({ method: "solana_connect", params: [account.address.solana] })).catch(() => { })
@@ -434,9 +482,7 @@ chrome.runtime.onConnect.addListener((panel) => {
     if (method === "wc_disconnect") {
       const _ = params
 
-      await current?.session.close()
-
-      current?.session.channel.client.close()
+      current?.disconnect()
 
       current = null
 
