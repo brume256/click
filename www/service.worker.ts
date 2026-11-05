@@ -35,6 +35,8 @@ class WcAccountAndSession {
 
     let success = false
 
+    console.debug("Opening session...")
+
     const { jwk, tpc, key } = this.account.details
 
     const sticky = Uint8Array.fromBase64(jwk)
@@ -65,9 +67,6 @@ class WcAccountAndSession {
       if (this.#closing)
         return
 
-      if (!navigator.onLine)
-        return
-
       this.connect().catch(console.warn)
     }
 
@@ -76,6 +75,8 @@ class WcAccountAndSession {
     session.addEventListener("close", onClose, { signal: session.closing })
 
     await session.open()
+
+    console.debug("Session opened")
 
     success = true
 
@@ -93,14 +94,6 @@ let propose: Nullable<AbortController> = null
 const scripts = new Set<chrome.runtime.Port>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
-
-addEventListener("online", () => {
-  console.log("Online")
-})
-
-addEventListener("offline", () => {
-  console.log("Offline")
-})
 
 /**
  * Content script
