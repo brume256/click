@@ -97,6 +97,25 @@ const scripts = new Set<chrome.runtime.Port>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
+const init = Promise.try(async () => {
+  const { account } = await chrome.storage.local.get<{ account: WcAccount }>("account")
+
+  if (account == null)
+    return
+
+  current = new WcAccountAndSession(account)
+
+  current.connect().catch(console.warn)
+}).catch(console.error)
+
+addEventListener("online", () => {
+  if (current == null)
+    return
+  if (current.session != null)
+    return
+  current.connect().catch(console.warn)
+}, { passive: true })
+
 /**
  * Content script
  */
@@ -123,6 +142,8 @@ chrome.runtime.onConnect.addListener((script) => {
 
   const subroute = async (chainId: `${string}:${string}`, request: WcRequest) => {
     const { method, params } = request
+
+    await init
 
     if (method === "eth_coinbase") {
       const _ = params
@@ -311,6 +332,8 @@ chrome.runtime.onConnect.addListener((panel) => {
 
   const route = async (request: RpcRequest) => {
     const { method, params } = request
+
+    await init
 
     if (method === "ping") {
       const _ = params
@@ -556,22 +579,3 @@ chrome.runtime.onConnect.addListener((panel) => {
 
   return
 })
-
-Promise.try(async () => {
-  const { account } = await chrome.storage.local.get<{ account: WcAccount }>("account")
-
-  if (account == null)
-    return
-
-  current = new WcAccountAndSession(account)
-
-  current.connect().catch(console.warn)
-}).catch(console.error)
-
-addEventListener("online", () => {
-  if (current == null)
-    return
-  if (current.session != null)
-    return
-  current.connect().catch(console.warn)
-}, { passive: true })
