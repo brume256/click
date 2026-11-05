@@ -56,13 +56,20 @@ export class Channel extends EventTarget {
       return
     }
 
-    const onDisconnect = () => {
+    const onDisconnect = async () => {
       const error = chrome.runtime.lastError
 
       if (error != null)
         console.warn(error.message)
 
-      location.reload()
+      this.#port = this.#connect()
+
+      await new Promise(ok => setTimeout(ok, 1))
+
+      if (!chrome.runtime?.id)
+        location.reload()
+
+      return
     }
 
     port.onMessage.addListener(onMessage)

@@ -58,14 +58,17 @@ class WcAccountAndSession {
     }
 
     const onClose = () => {
-      this.#session = null
-
       console.debug("Session closed")
+
+      this.#session = null
 
       if (this.#closing)
         return
 
-      this.connect().catch(console.error)
+      if (!navigator.onLine)
+        return
+
+      this.connect().catch(console.warn)
     }
 
     session.addEventListener("event", (event) => onEvent(event.data), { signal: session.closing })
@@ -463,11 +466,11 @@ chrome.runtime.onConnect.addListener((panel) => {
       if (current != null)
         throw new RpcInvalidRequestError()
 
-      const session = new WcAccountAndSession(account)
+      await chrome.storage.local.set({ account })
 
-      await session.connect()
+      current = new WcAccountAndSession(account)
 
-      current = session
+      current.connect().catch(console.warn)
 
       for (const script of scripts) {
         Promise.try(() => script.postMessage({ method: "solana_connect", params: [account.address.solana] })).catch(() => { })
@@ -481,6 +484,8 @@ chrome.runtime.onConnect.addListener((panel) => {
 
     if (method === "wc_disconnect") {
       const _ = params
+
+      await chrome.storage.local.set({ account: null })
 
       current?.disconnect()
 
@@ -546,3 +551,14 @@ chrome.runtime.onConnect.addListener((panel) => {
 
   return
 })
+
+Promise.try(async () => {
+  const { account } = await chrome.storage.local.get<{ account: WcAccount }>("account")
+
+  if (account == null)
+    return
+
+  current = new WcAccountAndSession(account)
+
+  current.connect().catch(console.warn)
+}).catch(console.error)
