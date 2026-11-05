@@ -1,5 +1,7 @@
 /// <reference types="chrome" />
 
+import "@hazae41/worker-online-polyfill";
+
 import { WcAccount } from "@/libs/account/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
@@ -565,3 +567,11 @@ Promise.try(async () => {
 
   current.connect().catch(console.warn)
 }).catch(console.error)
+
+addEventListener("online", () => {
+  if (current == null)
+    return
+  if (current.session != null)
+    return
+  current.connect().catch(console.warn)
+}, { passive: true })

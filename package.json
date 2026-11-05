@@ -27,6 +27,7 @@
     "@hazae41/rewind": "2.3.14",
     "@hazae41/symbol-dispose-polyfill": "1.1.2",
     "@hazae41/visage": "^1.0.0",
+    "@hazae41/worker-online-polyfill": "^1.0.0",
     "@heroicons/react": "2.2.0",
     "bn.js": "^5.2.5",
     "buffer": "^6.0.3",
