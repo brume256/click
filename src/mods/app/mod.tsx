@@ -293,11 +293,6 @@ export function App(props: { channel: Channel }) {
   }, [channel])
 
   const onConnect = useTask((wanted: WcAccount) => Promise.try(async () => {
-    if (wanted.uuid === account?.uuid)
-      return
-
-    await channel.request({ method: "wc_disconnect" })
-
     await channel.request({ method: "wc_connect", params: [wanted] })
   }).catch(Errors.display), [channel, account])
 

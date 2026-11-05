@@ -94,6 +94,14 @@ const scripts = new Set<chrome.runtime.Port>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
+addEventListener("online", () => {
+  console.log("Online")
+})
+
+addEventListener("offline", () => {
+  console.log("Offline")
+})
+
 /**
  * Content script
  */
@@ -463,10 +471,12 @@ chrome.runtime.onConnect.addListener((panel) => {
     if (method === "wc_connect") {
       const [account] = params as [WcAccount]
 
-      if (current != null)
-        throw new RpcInvalidRequestError()
+      if (account.uuid === current?.account.uuid)
+        return
 
       await chrome.storage.local.set({ account })
+
+      current?.disconnect()
 
       current = new WcAccountAndSession(account)
 
