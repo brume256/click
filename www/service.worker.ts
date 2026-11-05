@@ -440,7 +440,7 @@ chrome.runtime.onConnect.addListener((panel) => {
     if (method === "wc_delete") {
       const [account] = params as [WcAccount]
 
-      if (current?.account.uuid === account.uuid)
+      if (account.uuid === current?.account.uuid)
         throw new RpcInvalidRequestError()
 
       const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
