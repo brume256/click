@@ -8,6 +8,7 @@ import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
 import { Events } from "@/libs/events/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
+import { Lang } from "@/libs/lang/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { useTask } from "@/libs/task/mod.ts";
 import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
@@ -96,10 +97,11 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
 
   return <div className="flex flex-col grow p-6 text-base">
     <div className="font-medium">
-      WalletConnect code
+      {Lang.match({ en: "WalletConnect code", zh: "WalletConnect 代码", hi: "WalletConnect कोड", es: "Código de WalletConnect", ar: "رمز WalletConnect", fr: "Code WalletConnect", de: "WalletConnect-Code", ru: "Код WalletConnect", pt: "Código WalletConnect", ja: "WalletConnectコード", pa: "WalletConnect ਕੋਡ", bn: "WalletConnect কোড", id: "Kode WalletConnect", ur: "WalletConnect کوڈ", ms: "Kod WalletConnect", it: "Codice WalletConnect", tr: "WalletConnect kodu", ta: "WalletConnect குறியீடு", te: "WalletConnect కోడ్", ko: "WalletConnect 코드", vi: "Mã WalletConnect", pl: "Kod WalletConnect", ro: "Cod WalletConnect", nl: "WalletConnect-code", el: "Κωδικός WalletConnect", th: "รหัส WalletConnect", cs: "Kód WalletConnect", hu: "WalletConnect kód", sv: "WalletConnect-kod", da: "WalletConnect-kode", })}
     </div>
+    <div className="h-1" />
     <div className="text-default-contrast">
-      Your WalletConnect pairing code. Use it to connect your wallet.
+      {Lang.match({ en: "Your WalletConnect pairing code. Use it to connect your wallet.", zh: "您的 WalletConnect 配对代码。用它连接您的钱包。", hi: "आपका WalletConnect पेयरिंग कोड। इसका उपयोग अपने वॉलेट को कनेक्ट करने के लिए करें।", es: "Su código de emparejamiento de WalletConnect. Úselo para conectar su billetera.", ar: "رمز اقتران WalletConnect الخاص بك. استخدمه لتوصيل محفظتك.", fr: "Votre code de jumelage WalletConnect. Utilisez-le pour connecter votre portefeuille.", de: "Ihr WalletConnect-Pairing-Code. Verwenden Sie ihn, um Ihre Brieftasche zu verbinden.", ru: "Ваш код сопряжения WalletConnect. Используйте его для подключения вашего кошелька.", pt: "Seu código de emparelhamento WalletConnect. Use-o para conectar sua carteira.", ja: "あなたの WalletConnect ペアリングコード。ウォレットを接続するために使用してください。", pa: "ਤੁਹਾਡਾ WalletConnect ਪੇਅਰਿੰਗ ਕੋਡ। ਇਸਨੂੰ ਆਪਣੇ ਵਾਲਿਟ ਨੂੰ ਕਨੈਕਟ ਕਰਨ ਲਈ ਵਰਤੋਂ ਕਰੋ।", bn: "আপনার WalletConnect পেয়ারিং কোড। এটি ব্যবহার করে আপনার ওয়ালেট সংযুক্ত করুন।", id: "Kode pasangan WalletConnect Anda. Gunakan untuk menghubungkan dompet Anda.", ur: "آپ کا WalletConnect پیئرنگ کوڈ۔ اسے اپنے والیٹ کو جوڑنے کے لیے استعمال کریں۔", ms: "Kod pasangan WalletConnect anda. Gunakannya untuk menyambungkan dompet anda.", it: "Il tuo codice di associazione WalletConnect. Usalo per connettere il tuo portafoglio.", tr: "WalletConnect eşleştirme kodunuz. Cüzdanınızı bağlamak için kullanın.", ta: "உங்கள் WalletConnect ஜோடி குறியீடு. உங்கள் பணப்பையை இணைக்க இதைப் பயன்படுத்தவும்.", te: "మీ WalletConnect జత కోడ్. మీ వాలెట్‌ను కనెక్ట్ చేయడానికి దీన్ని ఉపయోగించండి.", ko: "귀하의 WalletConnect 페어링 코드. 지갑을 연결하는 데 사용하세요.", vi: "Mã ghép nối WalletConnect của bạn. Sử dụng nó để kết nối ví của bạn.", pl: "Twój kod parowania WalletConnect. Użyj go, aby połączyć swój portfel.", ro: "Codul dvs. de asociere WalletConnect. Folosiți-l pentru a vă conecta portofelul.", nl: "Uw WalletConnect-koppelingscode. Gebruik deze om uw portemonnee te verbinden.", el: "Ο κωδικός ζεύξης WalletConnect σας. Χρησιμοποιήστε τον για να συνδέσετε το πορτοφόλι σας.", th: "รหัสจับคู่ WalletConnect ของคุณ ใช้เพื่อเชื่อมต่อกระเป๋าเงินของคุณ", cs: "Váš kód párování WalletConnect. Použijte jej k připojení své peněženky.", hu: "A WalletConnect párosítási kódja. Használja a pénztárca csatlakoztatásához.", sv: "Din WalletConnect-parningskod. Använd den för att ansluta din plånbok.", da: "Din WalletConnect-parringskode. Brug den til at forbinde din tegnebog." })}
     </div>
     <div className="h-4" />
     <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
@@ -161,7 +163,7 @@ export function CreateWindow(props: { channel: Channel }) {
         </PathPrompt>}
     </SubpathProvider>
     <h1 className="text-xl font-medium">
-      Add account
+      {Lang.match({ en: "Add account", zh: "添加账户", hi: "खाता जोड़ें", es: "Agregar cuenta", ar: "إضافة حساب", fr: "Ajouter un compte", de: "Konto hinzufügen", ru: "Добавить аккаунт", pt: "Adicionar conta", ja: "アカウントを追加", pa: "ਖਾਤਾ ਸ਼ਾਮਲ ਕਰੋ", bn: "অ্যাকাউন্ট যোগ করুন", id: "Tambahkan akun", ur: "اکاؤنٹ شامل کریں", ms: "Tambah akaun", it: "Aggiungi account", tr: "Hesap ekle", ta: "கணக்கைச் சேர்க்கவும்", te: "ఖాతాను జోడించండి", ko: "계정 추가", vi: "Thêm tài khoản", pl: "Dodaj konto", ro: "Adăugați cont", nl: "Account toevoegen", el: "Προσθήκη λογαριασμού", th: "เพิ่มบัญชี", cs: "Přidat účet", hu: "Fiók hozzáadása", sv: "Lägg till konto", da: "Tilføj konto" })}
     </h1>
     <div className="h-6" />
     <div className="flex items-center justify-center">
@@ -218,10 +220,11 @@ export function CreateWindow(props: { channel: Channel }) {
         name="username" />
       <div className="h-6" />
       <div className="font-medium">
-        Title
+        {Lang.match({ en: "Title", zh: "标题", hi: "शीर्षक", es: "Título", ar: "العنوان", fr: "Titre", de: "Titel", ru: "Заголовок", pt: "Título", ja: "タイトル", pa: "ਸਿਰਲੇਖ", bn: "শিরোনাম", id: "Judul", ur: "عنوان", ms: "Tajuk", it: "Titolo", tr: "Başlık", ta: "தலைப்பு", te: "శీర్షిక", ko: "제목", vi: "Tiêu đề", pl: "Tytuł", ro: "Titlu", nl: "Titel", el: "Τίτλος", th: "หัวข้อ", cs: "Název", hu: "Cím", sv: "Titel", da: "Titel" })}
       </div>
+      <div className="h-1" />
       <div className="text-default-contrast">
-        Name this account. Not shared anywhere.
+        {Lang.match({ en: "Name this account. This name won't be shared anywhere.", zh: "为此账户命名。此名称不会在任何地方共享。", hi: "इस खाते का नाम दें। यह नाम कहीं भी साझा नहीं किया जाएगा।", es: "Nombra esta cuenta. Este nombre no se compartirá en ningún lugar.", ar: "قم بتسمية هذا الحساب. لن يتم مشاركة هذا الاسم في أي مكان.", fr: "Nommez ce compte. Ce nom ne sera partagé nulle part.", de: "Benennen Sie dieses Konto. Dieser Name wird nirgendwo geteilt.", ru: "Назовите этот аккаунт. Это имя нигде не будет использоваться.", pt: "Nomeie esta conta. Este nome não será compartilhado em nenhum lugar.", ja: "このアカウントに名前を付けます。この名前はどこにも共有されません。", pa: "ਇਸ ਖਾਤੇ ਦਾ ਨਾਮ ਰੱਖੋ। ਇਹ ਨਾਮ ਕਿਤੇ ਵੀ ਸਾਂਝਾ ਨਹੀਂ ਕੀਤਾ ਜਾਵੇਗਾ।", bn: "এই অ্যাকাউন্টের নাম দিন। এই নাম কোথাও শেয়ার করা হবে না।", id: "Beri nama akun ini. Nama ini tidak akan dibagikan di mana pun.", ur: "اس اکاؤنٹ کا نام رکھیں۔ یہ نام کہیں بھی شیئر نہیں کیا جائے گا۔", ms: "Namakan akaun ini. Nama ini tidak akan dikongsi di mana-mana.", it: "Assegna un nome a questo account. Questo nome non sarà condiviso da nessuna parte.", tr: "Bu hesabı adlandırın. Bu ad hiçbir yerde paylaşılmayacak.", ta: "இந்த கணக்கிற்கு பெயர் வைக்கவும். இந்த பெயர் எங்கும் பகிரப்படாது.", te: "ఈ ఖాతాకు పేరు పెట్టండి. ఈ పేరు ఎక్కడా పంచుకోబడదు.", ko: "이 계정의 이름을 지정하세요. 이 이름은 어디에도 공유되지 않습니다.", vi: "Đặt tên cho tài khoản này. Tên này sẽ không được chia sẻ ở bất kỳ đâu.", pl: "Nazwij to konto. Ta nazwa nie będzie udostępniana nigdzie.", ro: "Denumiți acest cont. Acest nume nu va fi partajat nicăieri.", nl: "Geef dit account een naam. Deze naam wordt nergens gedeeld.", el: "Ονομάστε αυτόν τον λογαριασμό. Αυτό το όνομα δεν θα κοινοποιηθεί πουθενά.", th: "ตั้งชื่อบัญชีนี้ ชื่อนี้จะไม่ถูกแชร์ที่ไหน", cs: "Pojmenujte tento účet. Tento název nebude nikde sdílen.", hu: "Nevezze el ezt a fiókot. Ez a név sehol sem lesz megosztva.", sv: "Namnge detta konto. Detta namn kommer inte att delas någonstans.", da: "Navngiv denne konto. Dette navn vil ikke blive delt nogen steder." })}
       </div>
       <div className="h-4" />
       <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
@@ -240,7 +243,7 @@ export function CreateWindow(props: { channel: Channel }) {
           onKeyDown={connect.onKeyDown}
           onClick={connect.onClick}
           href={connect.url.hash}>
-          Connect
+          {Lang.match({ en: "Connect", zh: "连接", hi: "कनेक्ट करें", es: "Conectar", ar: "اتصال", fr: "Connecter", de: "Verbinden", ru: "Подключить", pt: "Conectar", ja: "接続", pa: "ਜੁੜੋ", bn: "সংযোগ করুন", id: "Hubungkan", ur: "کنیکٹ کریں", ms: "Sambung", it: "Connetti", tr: "Bağlan", ta: "இணைக்கவும்", te: "కనెక్ట్ చేయండి", ko: "연결", vi: "Kết nối", pl: "Połącz", ro: "Conectează", nl: "Verbinden", el: "Σύνδεση", th: "เชื่อมต่อ", cs: "Připojit", hu: "Csatlakozás", sv: "Anslut", da: "Forbind" })}
         </WideOppositeAnchor>
       </div>
     </form>
@@ -477,20 +480,21 @@ export function DeletePrompt(props: { channel: Channel } & { account: WcAccount 
 
   return <div className="flex flex-col grow p-6 text-base">
     <div className="font-medium">
-      Delete
+      {Lang.match({ en: "Delete", zh: "删除", hi: "हटाएं", es: "Eliminar", ar: "حذف", fr: "Supprimer", de: "Löschen", ru: "Удалить", pt: "Excluir", ja: "削除", pa: "ਹਟਾਓ", bn: "মুছুন", id: "Hapus", ur: "حذف کریں", ms: "Padam", it: "Elimina", tr: "Sil", ta: "அழிக்கவும்", te: "తొలగించు", ko: "삭제", vi: "Xóa", pl: "Usuń", ro: "Șterge", nl: "Verwijderen", el: "Διαγραφή", th: "ลบ", cs: "Smazat", hu: "Törlés", sv: "Radera", da: "Slet" })}
     </div>
+    <div className="h-1" />
     <div className="text-default-contrast">
-      Are you sure you want to delete this account?
+      {Lang.match({ en: "Are you sure you want to delete this account?", zh: "您确定要删除此账户吗？", hi: "क्या आप वाकई इस खाते को हटाना चाहते हैं?", es: "¿Está seguro de que desea eliminar esta cuenta?", ar: "هل أنت متأكد أنك تريد حذف هذا الحساب؟", fr: "Êtes-vous sûr de vouloir supprimer ce compte ?", de: "Sind Sie sicher, dass Sie dieses Konto löschen möchten?", ru: "Вы уверены, что хотите удалить этот аккаунт?", pt: "Tem certeza de que deseja excluir esta conta?", ja: "このアカウントを削除してもよろしいですか？", pa: "ਕੀ ਤੁਸੀਂ ਯਕੀਨਨ ਇਸ ਖਾਤੇ ਨੂੰ ਹਟਾਉਣਾ ਚਾਹੁੰਦੇ ਹੋ?", bn: "আপনি কি সত্যিই এই অ্যাকাউন্টটি মুছতে চান?", id: "Apakah Anda yakin ingin menghapus akun ini?", ur: "کیا آپ واقعی اس اکاؤنٹ کو حذف کرنا چاہتے ہیں؟", ms: "Adakah anda pasti mahu memadam akaun ini?", it: "Sei sicuro di voler eliminare questo account?", tr: "Bu hesabı silmek istediğinizden emin misiniz?", ta: "இந்த கணக்கை நீக்க விரும்புகிறீர்களா?", te: "మీరు నిజంగా ఈ ఖాతాను తొలగించాలనుకుంటున్నారా?", ko: "이 계정을 삭제하시겠습니까?", vi: "Bạn có chắc chắn muốn xóa tài khoản này không?", pl: "Czy na pewno chcesz usunąć to konto?", ro: "Sigur doriți să ștergeți acest cont?", nl: "Weet u zeker dat u dit account wilt verwijderen?", el: "Είστε βέβαιοι ότι θέλετε να διαγράψετε αυτόν τον λογαριασμό;", th: "คุณแน่ใจหรือว่าต้องการลบบัญชีนี้?", cs: "Opravdu chcete tento účet smazat?", hu: "Biztosan törölni szeretné ezt a fiókot?", sv: "Är du säker på att du vill ta bort detta konto?", da: "Er du sikker på, at du vil slette denne konto?" })}
     </div>
     <div className="h-4" />
     <div className="flex items-center flex-wrap-reverse gap-2">
       <WideContrastButton
         onClick={onClose}>
-        Cancel
+        {Lang.match({ en: "Cancel", zh: "取消", hi: "रद्द करें", es: "Cancelar", ar: "إلغاء", fr: "Annuler", de: "Abbrechen", ru: "Отмена", pt: "Cancelar", ja: "キャンセル", pa: "ਰੱਦ ਕਰੋ", bn: "বাতিল করুন", id: "Batal", ur: "منسوخ کریں", ms: "Batal", it: "Annulla", tr: "İptal", ta: "ரத்து செய்", te: "రద్దు చేయి", ko: "취소", vi: "Hủy", pl: "Anuluj", ro: "Anulează", nl: "Annuleren", el: "Ακύρωση", th: "ยกเลิก", cs: "Zrušit", hu: "Mégse", sv: "Avbryt", da: "Annuller" })}
       </WideContrastButton>
       <WideOppositeButton
         onClick={onDelete}>
-        Delete
+        {Lang.match({ en: "Delete", zh: "删除", hi: "हटाएं", es: "Eliminar", ar: "حذف", fr: "Supprimer", de: "Löschen", ru: "Удалить", pt: "Excluir", ja: "削除", pa: "ਹਟਾਓ", bn: "মুছুন", id: "Hapus", ur: "حذف کریں", ms: "Padam", it: "Elimina", tr: "Sil", ta: "அழிக்கவும்", te: "తొలగించు", ko: "삭제", vi: "Xóa", pl: "Usuń", ro: "Șterge", nl: "Verwijderen", el: "Διαγραφή", th: "ลบ", cs: "Smazat", hu: "Törlés", sv: "Radera", da: "Slet" })}
       </WideOppositeButton>
     </div>
   </div>
