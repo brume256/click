@@ -178,9 +178,7 @@ export class Phantom extends EventEmitter {
     if (this.publicKey == null)
       throw new RpcInternalError()
 
-    const options = { requireAllSignatures: false, verifySignatures: false }
-
-    const transaction64 = transaction.serialize(options).toBase64()
+    const transaction64 = transaction.serialize({ requireAllSignatures: false, verifySignatures: false }).toBase64()
     const pubkey58 = this.publicKey.toBase58()
 
     const params = { transaction: transaction64, pubkey: pubkey58 }
