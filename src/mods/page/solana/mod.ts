@@ -49,6 +49,10 @@ export class PublicKey {
     return this.#publicKeyAsBN
   }
 
+  get _publicKeyBytes() {
+    return this.#publicKeyAsBytes
+  }
+
   toBase58() {
     return this.publicKeyAsBase58
   }
@@ -80,7 +84,7 @@ export interface TransactionLike {
 
   readonly signatures: Uint8Array[]
 
-  serialize(options: unknown): Uint8Array
+  serialize(options: unknown): Promise<Uint8Array>
 
   addSignature(publicKey: PublicKey, signature: Uint8Array): void
 
@@ -178,7 +182,9 @@ export class Phantom extends EventEmitter {
     if (this.publicKey == null)
       throw new RpcInternalError()
 
-    const transaction64 = transaction.serialize({ requireAllSignatures: false, verifySignatures: false }).toBase64()
+    const serialized = await transaction.serialize({ requireAllSignatures: false, verifySignatures: false })
+
+    const transaction64 = serialized.toBase64()
     const pubkey58 = this.publicKey.toBase58()
 
     const params = { transaction: transaction64, pubkey: pubkey58 }
