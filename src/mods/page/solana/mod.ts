@@ -80,7 +80,7 @@ export interface TransactionLike {
 
   readonly signatures: Uint8Array[]
 
-  serialize(): Uint8Array
+  serialize(options: unknown): Uint8Array
 
   addSignature(publicKey: PublicKey, signature: Uint8Array): void
 
@@ -178,7 +178,9 @@ export class Phantom extends EventEmitter {
     if (this.publicKey == null)
       throw new RpcInternalError()
 
-    const transaction64 = transaction.serialize().toBase64()
+    const options = { requireAllSignatures: false, verifySignatures: false }
+
+    const transaction64 = transaction.serialize(options).toBase64()
     const pubkey58 = this.publicKey.toBase58()
 
     const params = { transaction: transaction64, pubkey: pubkey58 }
