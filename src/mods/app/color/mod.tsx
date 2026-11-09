@@ -1,7 +1,6 @@
-import { InOther } from "@/libs/anchor/mod.tsx";
-import { InButton } from "@/libs/button/mod.tsx";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { Clicker } from "@hazae41/labase";
 import React, { Fragment } from "react";
 
 React;
@@ -18,7 +17,7 @@ export function ColorAnchor(props: { color?: Nullable<string> }) {
     href={coords.url.hash}
     onClick={coords.onClick}
     onKeyDown={coords.onKeyDown}>
-    <InOther>
+    <Clicker>
       <div className="size-5 rounded-full bg-opposite
         data-[color=red]:bg-red-400 
         data-[color=orange]:bg-orange-400 
@@ -55,7 +54,7 @@ export function ColorAnchor(props: { color?: Nullable<string> }) {
         in-dark:data-[color=pink]:bg-pink-500
         in-dark:data-[color=rose]:bg-rose-500"
         data-color={color} />
-    </InOther>
+    </Clicker>
   </a>
 }
 
@@ -66,16 +65,16 @@ export function ColorBubble(props: { ok(color: Nullable<string>): void }) {
     <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
       onClick={() => ok(null)}
       type="button">
-      <InButton>
+      <Clicker>
         <div className="size-5 rounded-full bg-opposite" />
-      </InButton>
+      </Clicker>
     </button>
     {["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"].map(color =>
       <Fragment key={color}>
         <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
           onClick={() => ok(color)}
           type="button">
-          <InButton>
+          <Clicker>
             <div className="size-5 rounded-full
               data-[color=red]:bg-red-400 
               data-[color=orange]:bg-orange-400 
@@ -112,7 +111,7 @@ export function ColorBubble(props: { ok(color: Nullable<string>): void }) {
               in-dark:data-[color=pink]:bg-pink-500
               in-dark:data-[color=rose]:bg-rose-500"
               data-color={color} />
-          </InButton>
+          </Clicker>
         </button>
       </Fragment>)}
   </div>

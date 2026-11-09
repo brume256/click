@@ -1,12 +1,11 @@
 /// <reference types="chrome" />
 
 import { WcAccount } from "@/libs/account/mod.ts";
-import { InOther, WideOppositeAnchor } from "@/libs/anchor/mod.tsx";
-import { InButton, WideContrastButton, WideOppositeButton } from "@/libs/button/mod.tsx";
 import { Channel } from "@/libs/channel/mod.ts";
 import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
 import { Events } from "@/libs/events/mod.ts";
+import { useAutoFocus } from "@/libs/focus/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Lang } from "@/libs/lang/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
@@ -14,6 +13,7 @@ import { useTask } from "@/libs/task/mod.ts";
 import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
 import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit } from "@hazae41/jsonrpc";
+import { Clicker, WideContrastButton, WideOppositeAnchor, WideOppositeButton } from "@hazae41/labase";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
@@ -114,17 +114,17 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
         <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
           type="button"
           onClick={copyOrDisplay}>
-          <InButton>
+          <Clicker>
             {copied ? <Outline.CheckIcon className="size-5" /> : <Outline.DocumentDuplicateIcon className="size-5" />}
-          </InButton>
+          </Clicker>
         </button>
         <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
           href={blob}
           target="_blank"
           rel="noreferrer">
-          <InOther>
+          <Clicker>
             <Outline.QrCodeIcon className="size-5" />
-          </InOther>
+          </Clicker>
         </a>
       </div>
     </div>
@@ -229,6 +229,7 @@ export function CreateWindow(props: { channel: Channel }) {
       <div className="h-4" />
       <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
         <input className="w-full focus-visible:outline-none"
+          ref={useAutoFocus()}
           autoComplete="off"
           placeholder={title}
           onChange={e => setTitle(e.target.value)}
@@ -455,9 +456,9 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
             onKeyDown={remove.onKeyDown}
             onClick={remove.onClick}
             href={remove.url.hash}>
-            <InButton>
+            <Clicker>
               <Outline.TrashIcon className="size-5" />
-            </InButton>
+            </Clicker>
           </a>
         </div>
       </div>
