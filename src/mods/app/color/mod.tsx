@@ -1,5 +1,5 @@
 import { Nullable } from "@/libs/nullable/mod.ts";
-import { useAnchorWithCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Clicker } from "@hazae41/labase";
 import React, { Fragment } from "react";
 
@@ -11,7 +11,7 @@ export function ColorAnchor(props: { color?: Nullable<string> }) {
   const path = usePathContext().getOrThrow()
   const hash = useHashSubpath(path)
 
-  const coords = useAnchorWithCoords(hash, "/color")
+  const coords = useCoords(hash, "/color")
 
   return <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
     href={coords.url.hash}

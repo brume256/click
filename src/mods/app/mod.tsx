@@ -11,9 +11,9 @@ import { Lang } from "@/libs/lang/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { useTask } from "@/libs/task/mod.ts";
 import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
-import { SubpathProvider, useAnchorWithCoords, useHashSubpath, usePath, usePathContext } from "@hazae41/chemin";
+import { SubpathProvider, useCoords, useHashSubpath, usePath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit } from "@hazae41/jsonrpc";
-import { Clicker, WideContrastButton, WideOppositeAnchor, WideOppositeButton } from "@hazae41/labase";
+import { Clicker, WideContrastButton, WideOppositeButton } from "@hazae41/labase";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
 import { useCloseContext } from "@hazae41/react-close-context";
 import { QrEncoder } from "@hazae41/visage";
@@ -145,7 +145,7 @@ export function CreateWindow(props: { channel: Channel }) {
 
   const [color, setColor] = useState<Nullable<string>>(["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][Math.floor(Math.random() * 16)])
 
-  const connect = useAnchorWithCoords(hash, "/connect")
+  const connect = useCoords(hash, "/connect")
 
   return <div className="flex flex-col grow p-6 text-base">
     <SubpathProvider value={hash}>
@@ -167,7 +167,7 @@ export function CreateWindow(props: { channel: Channel }) {
     </h1>
     <div className="h-6" />
     <div className="flex items-center justify-center">
-      <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start
+      <div className="w-[18rem] aspect-video bg-default text-default selection-default border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start
       data-[color=red]:bg-red-400 
       data-[color=orange]:bg-orange-400 
       data-[color=amber]:bg-amber-400 
@@ -212,13 +212,10 @@ export function CreateWindow(props: { channel: Channel }) {
           <Outline.LinkIcon className="size-5" />
           WalletConnect
         </div>
-      </button>
+      </div>
     </div>
+    <div className="h-6" />
     <form className="grow flex flex-col">
-      <input className="hidden"
-        autoComplete="off"
-        name="username" />
-      <div className="h-6" />
       <div className="font-medium">
         {Lang.match({ en: "Title", zh: "标题", hi: "शीर्षक", es: "Título", ar: "العنوان", fr: "Titre", de: "Titel", ru: "Заголовок", pt: "Título", ja: "タイトル", pa: "ਸਿਰਲੇਖ", bn: "শিরোনাম", id: "Judul", ur: "عنوان", ms: "Tajuk", it: "Titolo", tr: "Başlık", ta: "தலைப்பு", te: "శీర్షిక", ko: "제목", vi: "Tiêu đề", pl: "Tytuł", ro: "Titlu", nl: "Titel", el: "Τίτλος", th: "หัวข้อ", cs: "Název", hu: "Cím", sv: "Titel", da: "Titel" })}
       </div>
@@ -240,12 +237,10 @@ export function CreateWindow(props: { channel: Channel }) {
       </div>
       <div className="h-8 grow" />
       <div className="flex items-center flex-wrap-reverse gap-2">
-        <WideOppositeAnchor
-          onKeyDown={connect.onKeyDown}
-          onClick={connect.onClick}
-          href={connect.url.hash}>
+        <WideOppositeButton
+          onClick={connect.onClick}>
           {Lang.match({ en: "Connect", zh: "连接", hi: "कनेक्ट करें", es: "Conectar", ar: "اتصال", fr: "Connecter", de: "Verbinden", ru: "Подключить", pt: "Conectar", ja: "接続", pa: "ਜੁੜੋ", bn: "সংযোগ করুন", id: "Hubungkan", ur: "کنیکٹ کریں", ms: "Sambung", it: "Connetti", tr: "Bağlan", ta: "இணைக்கவும்", te: "కనెక్ట్ చేయండి", ko: "연결", vi: "Kết nối", pl: "Połącz", ro: "Conectează", nl: "Verbinden", el: "Σύνδεση", th: "เชื่อมต่อ", cs: "Připojit", hu: "Csatlakozás", sv: "Anslut", da: "Forbind" })}
-        </WideOppositeAnchor>
+        </WideOppositeButton>
       </div>
     </form>
   </div>
@@ -256,7 +251,7 @@ export function App(props: { channel: Channel }) {
 
   const path = usePathContext().getOrThrow()
 
-  const create = useAnchorWithCoords(path, "/create")
+  const create = useCoords(path, "/create")
 
   const [account, setAccount] = useState<WcAccount>()
 
@@ -321,7 +316,7 @@ export function App(props: { channel: Channel }) {
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto" />
     </Fragment>}
     {account && <Fragment key={account.address.eip155}>
-      <button type="button" className="w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 transition-transform
+      <button className="w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start animate-opacity-in hover:scale-105 focus-visible:outline-none focus-visible:scale-105 transition-transform
       data-[color=red]:bg-red-400 
       data-[color=orange]:bg-orange-400 
       data-[color=amber]:bg-amber-400 
@@ -358,7 +353,8 @@ export function App(props: { channel: Channel }) {
       in-dark:data-[color=rose]:bg-rose-500"
         data-theme={accounts.find(x => x.uuid === account.uuid)?.color == null ? "opposite" : "dark"}
         data-color={accounts.find(x => x.uuid === account.uuid)?.color}
-        onClick={onDisconnect}>
+        onClick={onDisconnect}
+        type="button">
         <div className="font-medium text-lg">
           {accounts.find(x => x.uuid === account.uuid)?.title}
         </div>
@@ -375,7 +371,7 @@ export function App(props: { channel: Channel }) {
         <Fragment key={x.uuid}>
           <AccountCard channel={channel} account={x} connect={onConnect} />
         </Fragment>)}
-      <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:scale-105 transition-transform"
+      <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:scale-105 focus-visible:outline-none focus-visible:scale-105 transition-transform"
         style={{ zIndex: accounts.length }}
         onKeyDown={create.onKeyDown}
         onClick={create.onClick}
@@ -396,7 +392,7 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
     connect(account)
   }, [connect, account])
 
-  const remove = useAnchorWithCoords(hash, `/${account.uuid}/delete`)
+  const remove = useCoords(hash, `/${account.uuid}/delete`)
 
   return <Fragment>
     <SubpathProvider value={hash}>
@@ -407,7 +403,7 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
             account={account} />
         </PathPrompt>}
     </SubpathProvider>
-    <div className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:scale-105 transition-transform
+    <button className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:scale-105 focus-visible:outline-none focus-visible:scale-105 transition-transform
   data-[color=red]:bg-red-400 
   data-[color=orange]:bg-orange-400 
   data-[color=amber]:bg-amber-400 
@@ -462,7 +458,7 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
           </a>
         </div>
       </div>
-    </div>
+    </button>
   </Fragment>
 }
 
