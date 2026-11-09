@@ -1,3 +1,5 @@
+// deno-lint-ignore-file jsx-button-has-type
+
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
 import { Clicker } from "@hazae41/labase";
@@ -63,8 +65,7 @@ export function ColorBubble(props: { ok(color: Nullable<string>): void }) {
 
   return <div className="grid grid-cols-6 grid-auto-rows gap-2">
     <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-      onClick={() => ok(null)}
-      type="button">
+      onClick={() => ok(null)}>
       <Clicker>
         <div className="size-5 rounded-full bg-opposite" />
       </Clicker>
@@ -72,8 +73,7 @@ export function ColorBubble(props: { ok(color: Nullable<string>): void }) {
     {["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"].map(color =>
       <Fragment key={color}>
         <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-          onClick={() => ok(color)}
-          type="button">
+          onClick={() => ok(color)}>
           <Clicker>
             <div className="size-5 rounded-full
               data-[color=red]:bg-red-400 

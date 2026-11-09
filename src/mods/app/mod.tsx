@@ -1,10 +1,11 @@
+// deno-lint-ignore-file jsx-button-has-type
+
 /// <reference types="chrome" />
 
 import { WcAccount } from "@/libs/account/mod.ts";
 import { Channel } from "@/libs/channel/mod.ts";
 import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
-import { Events } from "@/libs/events/mod.ts";
 import { useAutoFocus } from "@/libs/focus/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Lang } from "@/libs/lang/mod.ts";
@@ -112,7 +113,6 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
         value={code} />
       <div className="flex items-center gap-2">
         <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-          type="button"
           onClick={copyOrDisplay}>
           <Clicker>
             {copied ? <Outline.CheckIcon className="size-5" /> : <Outline.DocumentDuplicateIcon className="size-5" />}
@@ -353,8 +353,7 @@ export function App(props: { channel: Channel }) {
       in-dark:data-[color=rose]:bg-rose-500"
         data-theme={accounts.find(x => x.uuid === account.uuid)?.color == null ? "opposite" : "dark"}
         data-color={accounts.find(x => x.uuid === account.uuid)?.color}
-        onClick={onDisconnect}
-        type="button">
+        onClick={onDisconnect}>
         <div className="font-medium text-lg">
           {accounts.find(x => x.uuid === account.uuid)?.title}
         </div>
@@ -447,7 +446,7 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
         </div>
         <div className="w-4 grow" />
         <div className="flex items-center gap-2"
-          onClick={Events.stopPropagation}>
+          onClick={e => e.stopPropagation()}>
           <a className="group rounded-full cursor-pointer p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
             onKeyDown={remove.onKeyDown}
             onClick={remove.onClick}
