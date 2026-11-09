@@ -463,8 +463,20 @@ chrome.runtime.onConnect.addListener((panel) => {
     if (method === "wc_delete") {
       const [account] = params as [WcAccount]
 
-      if (account.uuid === current?.account.uuid)
-        throw new RpcInvalidRequestError()
+      if (account.uuid === current?.account.uuid) {
+        await chrome.storage.local.set({ account: null })
+
+        current?.disconnect()
+
+        current = null
+
+        for (const script of scripts) {
+          Promise.try(() => script.postMessage({ method: "solana_disconnect", params: undefined })).catch(() => { })
+          Promise.try(() => script.postMessage({ method: "eth_accountsChanged", params: [] })).catch(() => { })
+        }
+
+        Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [] })).catch(() => { })
+      }
 
       const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
 
