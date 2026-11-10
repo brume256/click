@@ -12,7 +12,7 @@ import { Lang } from "@/libs/lang/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { useTask } from "@/libs/task/mod.ts";
 import { ColorAnchor, ColorBubble } from "@/mods/app/color/mod.tsx";
-import { SubpathProvider, useCoords, useHashSubpath, usePath, usePathContext } from "@hazae41/chemin";
+import { SubpathProvider, useHashSubpath, useLinkWithCoords, usePath, usePathContext } from "@hazae41/chemin";
 import { RpcMessageInit } from "@hazae41/jsonrpc";
 import { Clicker, WideContrastButton, WideOppositeButton } from "@hazae41/labase";
 import { PathBubble, PathPrompt, PathWindow } from "@hazae41/modal";
@@ -145,15 +145,18 @@ export function CreateWindow(props: { channel: Channel }) {
 
   const [color, setColor] = useState<Nullable<string>>(["red", "orange", "amber", "yellow", "lime", "green", "emerald", "teal", "cyan", "sky", "blue", "indigo", "violet", "purple", "fuchsia", "pink", "rose"][Math.floor(Math.random() * 16)])
 
-  const connect = useCoords(hash, "/connect")
+  const goto = {
+    color: useLinkWithCoords(hash, "/color"),
+    connect: useLinkWithCoords(hash, "/connect")
+  }
 
   return <div className="flex flex-col grow p-6 text-base">
     <SubpathProvider value={hash}>
-      {hash.url.pathname === "/color" &&
+      {hash.url.pathname === goto.color.rel.pathname &&
         <PathBubble>
           <ColorBubble ok={setColor} />
         </PathBubble>}
-      {hash.url.pathname === "/connect" &&
+      {hash.url.pathname === goto.connect.rel.pathname &&
         <PathPrompt>
           <ConnectPrompt
             channel={channel}
@@ -232,13 +235,13 @@ export function CreateWindow(props: { channel: Channel }) {
           onChange={e => setTitle(e.target.value)}
           value={$title} />
         <div className="flex items-center gap-2">
-          <ColorAnchor color={color} />
+          <ColorAnchor color={color} link={goto.color} />
         </div>
       </div>
       <div className="h-8 grow" />
       <div className="flex items-center flex-wrap-reverse gap-2">
         <WideOppositeButton
-          onClick={connect.onClick}>
+          onClick={goto.connect.onClick}>
           {Lang.match({ en: "Connect", zh: "连接", hi: "कनेक्ट करें", es: "Conectar", ar: "اتصال", fr: "Connecter", de: "Verbinden", ru: "Подключить", pt: "Conectar", ja: "接続", pa: "ਜੁੜੋ", bn: "সংযোগ করুন", id: "Hubungkan", ur: "کنیکٹ کریں", ms: "Sambung", it: "Connetti", tr: "Bağlan", ta: "இணைக்கவும்", te: "కనెక్ట్ చేయండి", ko: "연결", vi: "Kết nối", pl: "Połącz", ro: "Conectează", nl: "Verbinden", el: "Σύνδεση", th: "เชื่อมต่อ", cs: "Připojit", hu: "Csatlakozás", sv: "Anslut", da: "Forbind" })}
         </WideOppositeButton>
       </div>
@@ -250,8 +253,11 @@ export function App(props: { channel: Channel }) {
   const { channel } = props
 
   const path = usePathContext().getOrThrow()
+  const hash = useHashSubpath(path)
 
-  const create = useCoords(path, "/create")
+  const goto = {
+    create: useLinkWithCoords(hash, "/create")
+  }
 
   const [account, setAccount] = useState<WcAccount>()
 
@@ -306,8 +312,8 @@ export function App(props: { channel: Channel }) {
   }, [channel])
 
   return <div className="h-full w-full flex flex-col items-center p-8">
-    <SubpathProvider value={path}>
-      {path.url.pathname === "/create" &&
+    <SubpathProvider value={hash}>
+      {hash.url.pathname === goto.create.rel.pathname &&
         <PathWindow>
           <CreateWindow channel={channel} />
         </PathWindow>}
@@ -372,9 +378,9 @@ export function App(props: { channel: Channel }) {
         </Fragment>)}
       <a className="-mt-28 z-0 w-[18rem] aspect-video bg-default border-2 border-default-contrast rounded-xl flex items-center justify-center hover:scale-105 focus-visible:outline-none focus-visible:scale-105 transition-transform"
         style={{ zIndex: accounts.length }}
-        onKeyDown={create.onKeyDown}
-        onClick={create.onClick}
-        href={create.url.hash}>
+        onKeyDown={goto.create.onKeyDown}
+        onClick={goto.create.onClick}
+        href={goto.create.abs.hash}>
         <Outline.PlusIcon className="size-8" />
       </a>
     </div>
@@ -387,15 +393,17 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
   const path = usePath()
   const hash = useHashSubpath(path)
 
+  const goto = {
+    delete: useLinkWithCoords(hash, `/${account.uuid}/delete`)
+  }
+
   const onClick = useCallback(() => {
     connect(account)
   }, [connect, account])
 
-  const remove = useCoords(hash, `/${account.uuid}/delete`)
-
   return <Fragment>
     <SubpathProvider value={hash}>
-      {hash.url.pathname === `/${account.uuid}/delete` &&
+      {hash.url.pathname === goto.delete.rel.pathname &&
         <PathPrompt>
           <DeletePrompt
             channel={channel}
@@ -448,9 +456,9 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
         <div className="flex items-center gap-2"
           onClick={e => e.stopPropagation()}>
           <a className="group rounded-full cursor-pointer p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-            onKeyDown={remove.onKeyDown}
-            onClick={remove.onClick}
-            href={remove.url.hash}>
+            onKeyDown={goto.delete.onKeyDown}
+            onClick={goto.delete.onClick}
+            href={goto.delete.abs.hash}>
             <Clicker>
               <Outline.TrashIcon className="size-5" />
             </Clicker>

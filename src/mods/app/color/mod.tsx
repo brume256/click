@@ -1,24 +1,19 @@
 // deno-lint-ignore-file jsx-button-has-type
 
 import { Nullable } from "@/libs/nullable/mod.ts";
-import { useCoords, useHashSubpath, usePathContext } from "@hazae41/chemin";
+import { LinkWithCoords } from "@hazae41/chemin";
 import { Clicker } from "@hazae41/labase";
 import React, { Fragment } from "react";
 
 React;
 
-export function ColorAnchor(props: { color?: Nullable<string> }) {
-  const { color } = props
-
-  const path = usePathContext().getOrThrow()
-  const hash = useHashSubpath(path)
-
-  const coords = useCoords(hash, "/color")
+export function ColorAnchor(props: { color?: Nullable<string> } & { link: LinkWithCoords }) {
+  const { color, link } = props
 
   return <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-    href={coords.url.hash}
-    onClick={coords.onClick}
-    onKeyDown={coords.onKeyDown}>
+    href={link.abs.hash}
+    onClick={link.onClick}
+    onKeyDown={link.onKeyDown}>
     <Clicker>
       <div className="size-5 rounded-full bg-opposite
         data-[color=red]:bg-red-400 
