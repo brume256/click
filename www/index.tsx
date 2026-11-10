@@ -10,16 +10,17 @@ import { Channel } from "@/libs/channel/mod.ts";
 import { dirs, Lang } from "@/libs/lang/mod.ts";
 import { App } from "@/mods/app/mod.tsx";
 import { PathProvider, useHashPath } from "@hazae41/chemin";
+import { ClientProvider, useClient } from "@hazae41/react-client-context";
 import { Rewind } from "@hazae41/rewind";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { hydrateRoot } from "react-dom/client";
 
 React;
 
 function Body() {
-  const path = useHashPath()
+  const client = useClient()
 
-  const [client, setClient] = useState(false)
+  const path = useHashPath()
 
   useEffect(() => {
     const lang = Lang.get()
@@ -27,7 +28,7 @@ function Body() {
     document.documentElement.lang = lang
     document.documentElement.dir = dirs[lang]
 
-    setClient(true)
+    return
   }, [])
 
   const channel = useMemo(() => {
@@ -37,11 +38,13 @@ function Body() {
   if (!client)
     return null
 
-  return <PathProvider value={path}>
-    <div className="h-full w-full overflow-y-auto animate-opacity-in text-base">
-      <App channel={channel} />
-    </div>
-  </PathProvider>
+  return <ClientProvider value={client}>
+    <PathProvider value={path}>
+      <div className="h-full w-full overflow-y-auto animate-opacity-in text-base">
+        <App channel={channel} />
+      </div>
+    </PathProvider>
+  </ClientProvider>
 }
 
 if (process.env.PLATFORM === "browser") {
