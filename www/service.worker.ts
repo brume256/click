@@ -91,9 +91,9 @@ class WcAccountAndSession {
 
 let current: Nullable<WcAccountAndSession> = null
 
-let propose: Nullable<AbortController> = null
-
 const scripts = new Set<chrome.runtime.Port>()
+
+const panels = new Set<chrome.runtime.Port>()
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
@@ -315,6 +315,7 @@ chrome.runtime.onConnect.addListener((script) => {
   stack.defer(() => script.onDisconnect.removeListener(onDisconnect))
 
   scripts.add(script)
+
   stack.defer(() => scripts.delete(script))
 
   return
@@ -329,6 +330,10 @@ chrome.runtime.onConnect.addListener((panel) => {
 
   if (panel.sender?.tab?.id != null)
     return
+
+  let proposal: Nullable<AbortController> = null
+
+  stack.defer(() => proposal?.abort())
 
   const route = async (request: RpcRequest) => {
     const { method, params } = request
@@ -346,12 +351,14 @@ chrome.runtime.onConnect.addListener((panel) => {
     if (method === "wc_propose") {
       const [title, color] = params as [string, string]
 
+      proposal?.abort()
+
       await using stack = new AsyncDisposableStack()
 
       let success = false
 
       const aborter = new AbortController()
-      propose = aborter
+      proposal = aborter
       const { signal } = aborter
 
       const cleaner = new AbortController()
@@ -439,7 +446,8 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       await chrome.storage.local.set({ accounts })
 
-      Promise.try(() => panel.postMessage({ method: "wc_accountsChanged", params: accounts })).catch(() => { })
+      for (const panel of panels)
+        Promise.try(() => panel.postMessage({ method: "wc_accountsChanged", params: accounts })).catch(() => { })
 
       return
     }
@@ -447,7 +455,7 @@ chrome.runtime.onConnect.addListener((panel) => {
     if (method === "wc_abandon") {
       const _ = params
 
-      propose?.abort()
+      proposal?.abort()
 
       return
     }
@@ -470,12 +478,14 @@ chrome.runtime.onConnect.addListener((panel) => {
 
         current = null
 
-        for (const script of scripts) {
-          Promise.try(() => script.postMessage({ method: "solana_disconnect", params: undefined })).catch(() => { })
+        for (const script of scripts)
+          Promise.try(() => script.postMessage({ method: "solana_disconnect" })).catch(() => { })
+        for (const script of scripts)
           Promise.try(() => script.postMessage({ method: "eth_accountsChanged", params: [] })).catch(() => { })
-        }
+        for (const panel of panels)
+          Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [] })).catch(() => { })
 
-        Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [] })).catch(() => { })
+        // NOOP
       }
 
       const { accounts = [] } = await chrome.storage.local.get<{ accounts?: WcAccount[] }>("accounts")
@@ -484,7 +494,8 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       await chrome.storage.local.set({ accounts })
 
-      Promise.try(() => panel.postMessage({ method: "wc_accountsChanged", params: accounts })).catch(() => { })
+      for (const panel of panels)
+        Promise.try(() => panel.postMessage({ method: "wc_accountsChanged", params: accounts })).catch(() => { })
 
       return
     }
@@ -512,12 +523,12 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       current.connect().catch(console.warn)
 
-      for (const script of scripts) {
+      for (const script of scripts)
         Promise.try(() => script.postMessage({ method: "solana_connect", params: [account.address.solana] })).catch(() => { })
+      for (const script of scripts)
         Promise.try(() => script.postMessage({ method: "eth_accountsChanged", params: [account.address.eip155] })).catch(() => { })
-      }
-
-      Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [account] })).catch(() => { })
+      for (const panel of panels)
+        Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [account] })).catch(() => { })
 
       return
     }
@@ -531,12 +542,12 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       current = null
 
-      for (const script of scripts) {
-        Promise.try(() => script.postMessage({ method: "solana_disconnect", params: undefined })).catch(() => { })
+      for (const script of scripts)
+        Promise.try(() => script.postMessage({ method: "solana_disconnect" })).catch(() => { })
+      for (const script of scripts)
         Promise.try(() => script.postMessage({ method: "eth_accountsChanged", params: [] })).catch(() => { })
-      }
-
-      Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [] })).catch(() => { })
+      for (const panel of panels)
+        Promise.try(() => panel.postMessage({ method: "wc_accountChanged", params: [] })).catch(() => { })
 
       return
     }
@@ -588,6 +599,10 @@ chrome.runtime.onConnect.addListener((panel) => {
 
   stack.defer(() => panel.onMessage.removeListener(onMessage))
   stack.defer(() => panel.onDisconnect.removeListener(onDisconnect))
+
+  panels.add(panel)
+
+  stack.defer(() => panels.delete(panel))
 
   return
 })
