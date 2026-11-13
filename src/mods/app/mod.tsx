@@ -6,7 +6,6 @@ import { WcAccount } from "@/libs/account/mod.ts";
 import { Channel } from "@/libs/channel/mod.ts";
 import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
-import { useAutoFocus } from "@/libs/focus/mod.ts";
 import { Outline } from "@/libs/heroicons/mod.ts";
 import { Lang } from "@/libs/lang/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
@@ -229,7 +228,7 @@ export function CreateWindow(props: { channel: Channel }) {
       <div className="h-4" />
       <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
         <input className="w-full focus-visible:outline-none"
-          ref={useAutoFocus()}
+          autoFocus
           autoComplete="off"
           placeholder={title}
           onChange={e => setTitle(e.target.value)}
