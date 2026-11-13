@@ -94,7 +94,7 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
       URL.revokeObjectURL(blob)
   }, [blob])
 
-  const { copied, copyOrDisplay } = useCopy(code)
+  const copy = useCopy(code)
 
   return <div className="flex flex-col grow p-6 text-base">
     <div className="font-medium">
@@ -113,9 +113,9 @@ export function ConnectPrompt(props: { channel: Channel } & { title: string } & 
         value={code} />
       <div className="flex items-center gap-2">
         <button className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
-          onClick={copyOrDisplay}>
+          onClick={copy}>
           <Clicker>
-            {copied ? <Outline.CheckIcon className="size-5" /> : <Outline.DocumentDuplicateIcon className="size-5" />}
+            {copy.copying ? <Outline.CheckIcon className="size-5" /> : <Outline.DocumentDuplicateIcon className="size-5" />}
           </Clicker>
         </button>
         <a className="group rounded-full p-1 hover:bg-default-double-contrast focus-visible:bg-default-double-contrast focus-visible:outline-none"
