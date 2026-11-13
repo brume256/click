@@ -217,7 +217,8 @@ export function CreateWindow(props: { channel: Channel }) {
       </div>
     </div>
     <div className="h-6" />
-    <form className="grow flex flex-col">
+    <form className="grow flex flex-col"
+      onSubmit={e => e.preventDefault()}>
       <div className="font-medium">
         {Lang.match({ en: "Title", zh: "标题", hi: "शीर्षक", es: "Título", ar: "العنوان", fr: "Titre", de: "Titel", ru: "Заголовок", pt: "Título", ja: "タイトル", pa: "ਸਿਰਲੇਖ", bn: "শিরোনাম", id: "Judul", ur: "عنوان", ms: "Tajuk", it: "Titolo", tr: "Başlık", ta: "தலைப்பு", te: "శీర్షిక", ko: "제목", vi: "Tiêu đề", pl: "Tytuł", ro: "Titlu", nl: "Titel", el: "Τίτλος", th: "หัวข้อ", cs: "Název", hu: "Cím", sv: "Titel", da: "Titel" })}
       </div>
@@ -240,6 +241,7 @@ export function CreateWindow(props: { channel: Channel }) {
       <div className="h-8 grow" />
       <div className="flex items-center flex-wrap-reverse gap-2">
         <WideOppositeButton
+          type="submit"
           onClick={goto.connect.onClick}>
           {Lang.match({ en: "Connect", zh: "连接", hi: "कनेक्ट करें", es: "Conectar", ar: "اتصال", fr: "Connecter", de: "Verbinden", ru: "Подключить", pt: "Conectar", ja: "接続", pa: "ਜੁੜੋ", bn: "সংযোগ করুন", id: "Hubungkan", ur: "کنیکٹ کریں", ms: "Sambung", it: "Connetti", tr: "Bağlan", ta: "இணைக்கவும்", te: "కనెక్ట్ చేయండి", ko: "연결", vi: "Kết nối", pl: "Połącz", ro: "Conectează", nl: "Verbinden", el: "Σύνδεση", th: "เชื่อมต่อ", cs: "Připojit", hu: "Csatlakozás", sv: "Anslut", da: "Forbind" })}
         </WideOppositeButton>
