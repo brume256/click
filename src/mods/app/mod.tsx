@@ -3,6 +3,7 @@
 /// <reference types="chrome" />
 
 import { WcAccount } from "@/libs/account/mod.ts";
+import { After } from "@/libs/after/mod.tsx";
 import { Channel } from "@/libs/channel/mod.ts";
 import { useCopy } from "@/libs/copy/mod.ts";
 import { Errors } from "@/libs/errors/mod.ts";
@@ -150,20 +151,22 @@ export function CreateWindow(props: { channel: Channel }) {
   }
 
   return <div className="flex flex-col grow p-6 text-base">
-    <SubpathProvider value={hash}>
-      {hash.url.pathname === goto.color.rel.pathname &&
-        <PathBubble>
-          <ColorBubble ok={setColor} />
-        </PathBubble>}
-      {hash.url.pathname === goto.connect.rel.pathname &&
-        <PathPrompt>
-          <ConnectPrompt
-            channel={channel}
-            title={title}
-            color={color}
-            close={close} />
-        </PathPrompt>}
-    </SubpathProvider>
+    <After delay={300}>
+      <SubpathProvider value={hash}>
+        {hash.url.pathname === goto.color.rel.pathname &&
+          <PathBubble>
+            <ColorBubble ok={setColor} />
+          </PathBubble>}
+        {hash.url.pathname === goto.connect.rel.pathname &&
+          <PathPrompt>
+            <ConnectPrompt
+              channel={channel}
+              title={title}
+              color={color}
+              close={close} />
+          </PathPrompt>}
+      </SubpathProvider>
+    </After>
     <h1 className="text-xl font-medium">
       {Lang.match({ en: "Add account", zh: "添加账户", hi: "खाता जोड़ें", es: "Agregar cuenta", ar: "إضافة حساب", fr: "Ajouter un compte", de: "Konto hinzufügen", ru: "Добавить аккаунт", pt: "Adicionar conta", ja: "アカウントを追加", pa: "ਖਾਤਾ ਸ਼ਾਮਲ ਕਰੋ", bn: "অ্যাকাউন্ট যোগ করুন", id: "Tambahkan akun", ur: "اکاؤنٹ شامل کریں", ms: "Tambah akaun", it: "Aggiungi account", tr: "Hesap ekle", ta: "கணக்கைச் சேர்க்கவும்", te: "ఖాతాను జోడించండి", ko: "계정 추가", vi: "Thêm tài khoản", pl: "Dodaj konto", ro: "Adăugați cont", nl: "Account toevoegen", el: "Προσθήκη λογαριασμού", th: "เพิ่มบัญชี", cs: "Přidat účet", hu: "Fiók hozzáadása", sv: "Lägg till konto", da: "Tilføj konto" })}
     </h1>
@@ -314,12 +317,14 @@ export function App(props: { channel: Channel }) {
   }, [channel])
 
   return <div className="h-full w-full flex flex-col items-center p-8">
-    <SubpathProvider value={hash}>
-      {hash.url.pathname === goto.create.rel.pathname &&
-        <PathWindow>
-          <CreateWindow channel={channel} />
-        </PathWindow>}
-    </SubpathProvider>
+    <After delay={300}>
+      <SubpathProvider value={hash}>
+        {hash.url.pathname === goto.create.rel.pathname &&
+          <PathWindow>
+            <CreateWindow channel={channel} />
+          </PathWindow>}
+      </SubpathProvider>
+    </After>
     {!account && <Fragment>
       <div className="w-[18rem] aspect-video bg-default-contrast border-2 border-default-contrast rounded-xl flex items-center justify-center p-8 break-all overflow-y-auto" />
     </Fragment>}
@@ -404,14 +409,16 @@ export function AccountCard(props: { channel: Channel } & { account: WcAccount }
   }, [connect, account])
 
   return <Fragment>
-    <SubpathProvider value={hash}>
-      {hash.url.pathname === goto.delete.rel.pathname &&
-        <PathPrompt>
-          <DeletePrompt
-            channel={channel}
-            account={account} />
-        </PathPrompt>}
-    </SubpathProvider>
+    <After delay={300}>
+      <SubpathProvider value={hash}>
+        {hash.url.pathname === goto.delete.rel.pathname &&
+          <PathPrompt>
+            <DeletePrompt
+              channel={channel}
+              account={account} />
+          </PathPrompt>}
+      </SubpathProvider>
+    </After>
     <button className="-mt-28 z-0 w-[18rem] aspect-video bg-default text-default selection-default cursor-pointer border-2 border-default-contrast rounded-xl p-4 flex flex-col items-start hover:scale-105 focus-visible:outline-none focus-visible:scale-105 transition-transform
   data-[color=red]:bg-red-400 
   data-[color=orange]:bg-orange-400 
