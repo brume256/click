@@ -3,6 +3,7 @@
 import "@hazae41/worker-online-polyfill";
 
 import { WcAccount } from "@/libs/account/mod.ts";
+import { chainlist } from "@/libs/chainlist/mod.ts";
 import { icon } from "@/libs/icon/mod.ts";
 import { Nullable } from "@/libs/nullable/mod.ts";
 import { RpcErr, RpcError, RpcInternalError, RpcInvalidRequestError, RpcMethodNotFoundError, RpcOk, RpcRequest, RpcRequestInit, RpcRequestPreinit } from "@hazae41/jsonrpc";
@@ -369,12 +370,12 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       const optionalNamespaces = {
         eip155: {
-          chains: ["eip155:1"],
+          chains: chainlist.map(chain => `eip155:${chain.chainId}`),
           methods: ["personal_sign", "eth_signTypedData_v4", "eth_sendTransaction"],
           events: []
         },
         solana: {
-          chains: ["solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
+          chains: [`solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`, `solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z`],
           methods: ["solana_signMessage", "solana_signTransaction"],
           events: []
         }
