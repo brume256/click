@@ -35,8 +35,6 @@ class WcAccountAndSession {
   async connect() {
     await using stack = new AsyncDisposableStack()
 
-    let success = false
-
     console.debug("Opening session...")
 
     const { jwk, tpc, key } = this.account.details
@@ -44,7 +42,7 @@ class WcAccountAndSession {
     const sticky = Uint8Array.fromBase64(jwk)
     const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
 
-    stack.defer(() => success ? undefined : client.close())
+    stack.defer(() => client.close())
 
     const channel = new WcChannel(client, tpc, Uint8Array.fromBase64(key))
     const session = new WcSession(channel)
@@ -80,9 +78,9 @@ class WcAccountAndSession {
 
     console.debug("Session opened")
 
-    success = true
-
     this.#session = session
+
+    stack.move()
 
     return session
   }
@@ -355,8 +353,6 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       await using stack = new AsyncDisposableStack()
 
-      let success = false
-
       const aborter = new AbortController()
       proposal = aborter
       const { signal } = aborter
@@ -387,7 +383,7 @@ chrome.runtime.onConnect.addListener((panel) => {
       const sticky = crypto.getRandomValues(new Uint8Array(32))
       const client = await IrnClient.open(WalletConnect.RELAY, sticky, "c6c9bacd35afa3eb9e6cccf6d8464395")
 
-      stack.defer(() => success ? undefined : client.close())
+      stack.defer(() => client.close())
 
       const pairing = await WcPairing.generate(client)
 
@@ -403,7 +399,6 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       await pairing.open()
 
-      stack.defer(async () => await pairing.close())
       stack.defer(async () => await pairing.delete())
 
       await pairing.propose({ self, optionalNamespaces }, signal)
@@ -420,16 +415,9 @@ chrome.runtime.onConnect.addListener((panel) => {
 
       await session.open()
 
-      stack.defer(async () => success ? undefined : await session.close())
-      stack.defer(async () => success ? undefined : await session.delete())
-
       const { namespaces } = await settled.promise
 
       console.debug("Session namespaces", namespaces)
-
-      success = true
-
-      await session.close()
 
       const jwk = sticky.toBase64()
       const tpc = session.channel.topic

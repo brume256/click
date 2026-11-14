@@ -217,27 +217,28 @@ export function CreateWindow(props: { channel: Channel }) {
       </div>
     </div>
     <div className="h-6" />
-    <form className="grow flex flex-col"
-      onSubmit={e => e.preventDefault()}>
-      <div className="font-medium">
-        {Lang.match({ en: "Title", zh: "标题", hi: "शीर्षक", es: "Título", ar: "العنوان", fr: "Titre", de: "Titel", ru: "Заголовок", pt: "Título", ja: "タイトル", pa: "ਸਿਰਲੇਖ", bn: "শিরোনাম", id: "Judul", ur: "عنوان", ms: "Tajuk", it: "Titolo", tr: "Başlık", ta: "தலைப்பு", te: "శీర్షిక", ko: "제목", vi: "Tiêu đề", pl: "Tytuł", ro: "Titlu", nl: "Titel", el: "Τίτλος", th: "หัวข้อ", cs: "Název", hu: "Cím", sv: "Titel", da: "Titel" })}
-      </div>
-      <div className="h-1" />
-      <div className="text-default-contrast">
-        {Lang.match({ en: "Name this account. This name won't be shared anywhere.", zh: "为此账户命名。此名称不会在任何地方共享。", hi: "इस खाते का नाम दें। यह नाम कहीं भी साझा नहीं किया जाएगा।", es: "Nombra esta cuenta. Este nombre no se compartirá en ningún lugar.", ar: "قم بتسمية هذا الحساب. لن يتم مشاركة هذا الاسم في أي مكان.", fr: "Nommez ce compte. Ce nom ne sera partagé nulle part.", de: "Benennen Sie dieses Konto. Dieser Name wird nirgendwo geteilt.", ru: "Назовите этот аккаунт. Это имя нигде не будет использоваться.", pt: "Nomeie esta conta. Este nome não será compartilhado em nenhum lugar.", ja: "このアカウントに名前を付けます。この名前はどこにも共有されません。", pa: "ਇਸ ਖਾਤੇ ਦਾ ਨਾਮ ਰੱਖੋ। ਇਹ ਨਾਮ ਕਿਤੇ ਵੀ ਸਾਂਝਾ ਨਹੀਂ ਕੀਤਾ ਜਾਵੇਗਾ।", bn: "এই অ্যাকাউন্টের নাম দিন। এই নাম কোথাও শেয়ার করা হবে না।", id: "Beri nama akun ini. Nama ini tidak akan dibagikan di mana pun.", ur: "اس اکاؤنٹ کا نام رکھیں۔ یہ نام کہیں بھی شیئر نہیں کیا جائے گا۔", ms: "Namakan akaun ini. Nama ini tidak akan dikongsi di mana-mana.", it: "Assegna un nome a questo account. Questo nome non sarà condiviso da nessuna parte.", tr: "Bu hesabı adlandırın. Bu ad hiçbir yerde paylaşılmayacak.", ta: "இந்த கணக்கிற்கு பெயர் வைக்கவும். இந்த பெயர் எங்கும் பகிரப்படாது.", te: "ఈ ఖాతాకు పేరు పెట్టండి. ఈ పేరు ఎక్కడా పంచుకోబడదు.", ko: "이 계정의 이름을 지정하세요. 이 이름은 어디에도 공유되지 않습니다.", vi: "Đặt tên cho tài khoản này. Tên này sẽ không được chia sẻ ở bất kỳ đâu.", pl: "Nazwij to konto. Ta nazwa nie będzie udostępniana nigdzie.", ro: "Denumiți acest cont. Acest nume nu va fi partajat nicăieri.", nl: "Geef dit account een naam. Deze naam wordt nergens gedeeld.", el: "Ονομάστε αυτόν τον λογαριασμό. Αυτό το όνομα δεν θα κοινοποιηθεί πουθενά.", th: "ตั้งชื่อบัญชีนี้ ชื่อนี้จะไม่ถูกแชร์ที่ไหน", cs: "Pojmenujte tento účet. Tento název nebude nikde sdílen.", hu: "Nevezze el ezt a fiókot. Ez a név sehol sem lesz megosztva.", sv: "Namnge detta konto. Detta namn kommer inte att delas någonstans.", da: "Navngiv denne konto. Dette navn vil ikke blive delt nogen steder." })}
-      </div>
-      <div className="h-4" />
-      <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
-        <input className="w-full focus-visible:outline-none"
-          autoFocus
-          autoComplete="off"
-          placeholder={title}
-          onChange={e => setTitle(e.target.value)}
-          value={$title} />
-        <div className="flex items-center gap-2">
-          <ColorAnchor color={color} link={goto.color} />
+    <form className="grow flex flex-col" onSubmit={e => e.preventDefault()}>
+      <label className="flex flex-col">
+        <div className="font-medium">
+          {Lang.match({ en: "Title", zh: "标题", hi: "शीर्षक", es: "Título", ar: "العنوان", fr: "Titre", de: "Titel", ru: "Заголовок", pt: "Título", ja: "タイトル", pa: "ਸਿਰਲੇਖ", bn: "শিরোনাম", id: "Judul", ur: "عنوان", ms: "Tajuk", it: "Titolo", tr: "Başlık", ta: "தலைப்பு", te: "శీర్షిక", ko: "제목", vi: "Tiêu đề", pl: "Tytuł", ro: "Titlu", nl: "Titel", el: "Τίτλος", th: "หัวข้อ", cs: "Název", hu: "Cím", sv: "Titel", da: "Titel" })}
         </div>
-      </div>
+        <div className="h-1" />
+        <div className="text-default-contrast">
+          {Lang.match({ en: "Name this account. This name won't be shared anywhere.", zh: "为此账户命名。此名称不会在任何地方共享。", hi: "इस खाते का नाम दें। यह नाम कहीं भी साझा नहीं किया जाएगा।", es: "Nombra esta cuenta. Este nombre no se compartirá en ningún lugar.", ar: "قم بتسمية هذا الحساب. لن يتم مشاركة هذا الاسم في أي مكان.", fr: "Nommez ce compte. Ce nom ne sera partagé nulle part.", de: "Benennen Sie dieses Konto. Dieser Name wird nirgendwo geteilt.", ru: "Назовите этот аккаунт. Это имя нигде не будет использоваться.", pt: "Nomeie esta conta. Este nome não será compartilhado em nenhum lugar.", ja: "このアカウントに名前を付けます。この名前はどこにも共有されません。", pa: "ਇਸ ਖਾਤੇ ਦਾ ਨਾਮ ਰੱਖੋ। ਇਹ ਨਾਮ ਕਿਤੇ ਵੀ ਸਾਂਝਾ ਨਹੀਂ ਕੀਤਾ ਜਾਵੇਗਾ।", bn: "এই অ্যাকাউন্টের নাম দিন। এই নাম কোথাও শেয়ার করা হবে না।", id: "Beri nama akun ini. Nama ini tidak akan dibagikan di mana pun.", ur: "اس اکاؤنٹ کا نام رکھیں۔ یہ نام کہیں بھی شیئر نہیں کیا جائے گا۔", ms: "Namakan akaun ini. Nama ini tidak akan dikongsi di mana-mana.", it: "Assegna un nome a questo account. Questo nome non sarà condiviso da nessuna parte.", tr: "Bu hesabı adlandırın. Bu ad hiçbir yerde paylaşılmayacak.", ta: "இந்த கணக்கிற்கு பெயர் வைக்கவும். இந்த பெயர் எங்கும் பகிரப்படாது.", te: "ఈ ఖాతాకు పేరు పెట్టండి. ఈ పేరు ఎక్కడా పంచుకోబడదు.", ko: "이 계정의 이름을 지정하세요. 이 이름은 어디에도 공유되지 않습니다.", vi: "Đặt tên cho tài khoản này. Tên này sẽ không được chia sẻ ở bất kỳ đâu.", pl: "Nazwij to konto. Ta nazwa nie będzie udostępniana nigdzie.", ro: "Denumiți acest cont. Acest nume nu va fi partajat nicăieri.", nl: "Geef dit account een naam. Deze naam wordt nergens gedeeld.", el: "Ονομάστε αυτόν τον λογαριασμό. Αυτό το όνομα δεν θα κοινοποιηθεί πουθενά.", th: "ตั้งชื่อบัญชีนี้ ชื่อนี้จะไม่ถูกแชร์ที่ไหน", cs: "Pojmenujte tento účet. Tento název nebude nikde sdílen.", hu: "Nevezze el ezt a fiókot. Ez a név sehol sem lesz megosztva.", sv: "Namnge detta konto. Detta namn kommer inte att delas någonstans.", da: "Navngiv denne konto. Dette navn vil ikke blive delt nogen steder." })}
+        </div>
+        <div className="h-4" />
+        <div className="bg-default-contrast po-2 rounded-xl flex items-center gap-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-default-contrast">
+          <input className="w-full focus-visible:outline-none"
+            autoFocus
+            autoComplete="off"
+            placeholder={title}
+            onChange={e => setTitle(e.target.value)}
+            value={$title} />
+          <div className="flex items-center gap-2">
+            <ColorAnchor color={color} link={goto.color} />
+          </div>
+        </div>
+      </label>
       <div className="h-8 grow" />
       <div className="flex items-center flex-wrap-reverse gap-2">
         <WideOppositeButton
